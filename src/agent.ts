@@ -1,0 +1,118 @@
+/**
+ * FauiAgent — 用户接口
+ *
+ * 用户通过此类配置 API Key、模型、代理地址，
+ * 调用 generatePage() 生成 faui 页面 JSON。
+ *
+ * 内部调用 agent-loop（不对外暴露），按需加载 skills。
+ */
+
+import type { GeneratePageOptions, GeneratePageResult, PageSchema, StreamEvent } from './types.js';
+import { SkillStore, type SkillDef } from './skill-store.js';
+import { runAgentLoop, runAgentLoopStream, runAgentLoopWithTools } from './agent-loop.js';
+
+export interface ToolResult {
+  schema: PageSchema;
+  message: string;
+}
+
+/** Agent 配置 */
+export interface FauiAgentConfig {
+  /** LLM 提供商，默认 'anthropic' */
+  provider?: 'anthropic' | 'openai' | string;
+  /** 模型名称 */
+  model?: string;
+  /** API Key（必填） */
+  apiKey: string;
+  /** 代理/自部署端点 URL */
+  baseUrl?: string;
+  /** 温度参数 */
+  temperature?: number;
+  /** 最大循环轮次 */
+  maxTurns?: number;
+
+  /** 系统提示词（必填） */
+  systemPrompt: string;
+
+  /** 使用工具化模式（增量构建），默认 false */
+  useTools?: boolean;
+  /** 自定义工具定义（不传则使用内置 SCHEMA_TOOLS） */
+  tools?: unknown[];
+  /** 自定义工具执行器（不传则使用内置 executeToolCall） */
+  toolExecutor?: (name: string, args: Record<string, unknown>, schema: PageSchema) => ToolResult;
+
+  /** Skills（非工具模式用，可选） */
+  skills?: SkillDef[];
+  /** 从指定目录加载 .md 格式的 skills（可选） */
+  skillPath?: string;
+
+  /** 消息历史最大条数，超出后裁剪早期消息，默认 60 */
+  maxMessages?: number;
+  /** schema 快照最大保留数，默认 10 */
+  maxSnapshots?: number;
+  /** JSON 解析连续失败次数上限，达到后终止，默认 3 */
+  maxConsecutiveFailures?: number;
+}
+
+export class FauiAgent {
+  private config: FauiAgentConfig;
+  private skillStore: SkillStore | null;
+
+  constructor(config: FauiAgentConfig) {
+    if (!config.apiKey) {
+      throw new Error('faui-agent: apiKey is required');
+    }
+    if (!config.systemPrompt) {
+      throw new Error('faui-agent: systemPrompt is required');
+    }
+    this.config = {
+      provider: 'anthropic',
+      maxTurns: 10,
+      ...config,
+    };
+    this.skillStore = config.skillPath
+      ? new SkillStore({ skillPath: config.skillPath })
+      : null;
+  }
+
+  /** 获取 SkillStore 实例（高级用法） */
+  getSkillStore(): SkillStore | null {
+    return this.skillStore;
+  }
+
+  /**
+   * 生成 faui 页面 JSON
+   * @param prompt 页面描述
+   * @param options 生成选项
+   */
+  async generatePage(
+    prompt: string,
+    options?: GeneratePageOptions,
+  ): Promise<GeneratePageResult> {
+    return runAgentLoop({
+      prompt,
+      config: this.config,
+      options,
+    });
+  }
+
+  /**
+   * 流式生成 faui 页面 JSON
+   * @param prompt 页面描述
+   * @param options 生成选项
+   */
+  async *generatePageStream(
+    prompt: string,
+    options?: GeneratePageOptions,
+  ): AsyncGenerator<StreamEvent> {
+    if (this.config.useTools) {
+      yield* runAgentLoopWithTools({ prompt, config: this.config, options });
+    } else {
+      yield* runAgentLoopStream({
+        prompt,
+        config: this.config,
+        options,
+      });
+    }
+  }
+}

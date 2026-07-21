@@ -1,0 +1,59 @@
+{
+  "name": "@lawlietfeng/faui-agent",
+  "version": "1.0.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "AI Agent framework for generating faui JSON Schema pages via LLM tool calls",
+  "license": "AGPL-3.0-only",
+  "author": "lawliet",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lawlietfeng/faui-agent.git"
+  },
+  "homepage": "https://github.com/lawlietfeng/faui-agent#readme",
+  "keywords": [
+    "ai-agent",
+    "llm",
+    "json-schema",
+    "faui",
+    "code-generation",
+    "tool-use"
+  ],
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "release": "node scripts/release.cjs"
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "^0.50.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^25.6.0",
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0",
+    "terser": "^5.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "^3.2.4"
+  }
+}
