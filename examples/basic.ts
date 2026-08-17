@@ -4,7 +4,7 @@
  * 演示工具模式的流式生成 + 多轮对话修改
  *
  * 运行方式：
- *   ANTHROPIC_API_KEY=sk-xxx npx tsx examples/basic.ts
+ *   OPENAI_API_KEY=sk-xxx npx tsx examples/basic.ts
  */
 
 import {
@@ -15,9 +15,9 @@ import {
 } from '../src/index.js';
 import type { PageSchema, StreamEvent } from '../src/index.js';
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {
-  console.error('请设置环境变量 ANTHROPIC_API_KEY');
+  console.error('请设置环境变量 OPENAI_API_KEY');
   process.exit(1);
 }
 

@@ -18,8 +18,8 @@ export interface ToolResult {
 
 /** Agent 配置 */
 export interface FauiAgentConfig {
-  /** LLM 提供商，默认 'anthropic' */
-  provider?: 'anthropic' | 'openai' | string;
+  /** 仅支持 OpenAI Responses 协议，默认 'openai' */
+  provider?: 'openai';
   /** 模型名称 */
   model?: string;
   /** API Key（必填） */
@@ -28,6 +28,8 @@ export interface FauiAgentConfig {
   baseUrl?: string;
   /** 温度参数 */
   temperature?: number;
+  /** 单次生成的最大输出 Token，默认 16384 */
+  maxOutputTokens?: number;
   /** 最大循环轮次 */
   maxTurns?: number;
 
@@ -65,10 +67,14 @@ export class FauiAgent {
     if (!config.systemPrompt) {
       throw new Error('faui-agent: systemPrompt is required');
     }
+    if (config.provider && config.provider !== 'openai') {
+      throw new Error('faui-agent: only the openai Responses provider is supported');
+    }
     this.config = {
-      provider: 'anthropic',
       maxTurns: 10,
       ...config,
+      provider: 'openai',
+      model: config.model ?? 'gpt-5.6',
     };
     this.skillStore = config.skillPath
       ? new SkillStore({ skillPath: config.skillPath })

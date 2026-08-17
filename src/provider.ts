@@ -1,24 +1,21 @@
 /**
- * Provider 层 — 重导出 pi-ai 核心能力
+ * OpenAI Responses Provider。
  *
- * 用户无需直接依赖 pi-ai，通过 faui-agent 间接使用。
- * agent-loop 内部消费这些 API，此处仅做类型桥接。
+ * 使用 Node.js 原生 fetch，不依赖 OpenAI SDK 或 pi-ai。
  */
+export {
+  DEFAULT_OPENAI_BASE_URL,
+  OpenAIResponsesProvider,
+  buildResponsesUrl,
+} from './openai-responses-provider.js';
 
 export type {
-  Api,
-  Provider,
-  Model,
-  StreamFunction,
-  StreamOptions,
-  ThinkingLevel,
-  StopReason,
-} from '@mariozechner/pi-ai';
-
-export {
-  stream,
-  streamSimple,
-  getModel,
-  getModels,
-  isContextOverflow,
-} from '@mariozechner/pi-ai';
+  OpenAIResponseOutputItem,
+  OpenAIResponseToolCall,
+  OpenAIResponsesEvent,
+  OpenAIResponsesMessage,
+  OpenAIResponsesProviderOptions,
+  OpenAIResponsesRequest,
+  OpenAIResponsesResult,
+  OpenAIResponsesTool,
+} from './openai-responses-provider.js';

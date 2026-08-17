@@ -43,7 +43,7 @@
     "release": "node scripts/release.cjs"
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "^0.50.7"
+    "@sinclair/typebox": "^0.34.41"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

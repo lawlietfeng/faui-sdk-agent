@@ -17,13 +17,28 @@ export { executeToolCall } from './tool-executor.js';
 export { TOOL_SYSTEM_PROMPT } from './tool-system-prompt.js';
 export { builtinSkills } from './skills/index.js';
 export { SkillStore, type SkillDef } from './skill-store.js';
+export {
+  DEFAULT_OPENAI_BASE_URL,
+  OpenAIResponsesProvider,
+  buildResponsesUrl,
+} from './provider.js';
+export type {
+  OpenAIResponseOutputItem,
+  OpenAIResponseToolCall,
+  OpenAIResponsesEvent,
+  OpenAIResponsesMessage,
+  OpenAIResponsesProviderOptions,
+  OpenAIResponsesRequest,
+  OpenAIResponsesResult,
+  OpenAIResponsesTool,
+} from './provider.js';
 
 export const SYSTEM_BASE = `You are faui-agent, an AI that generates faui page JSON schemas.
 
 Your output MUST be a valid JSON object matching this structure:
 {
   "components": [...],
-  "dataModel": { ... }  // optional
+  "dataModel": { ... }
 }
 
 Rules:
@@ -31,5 +46,6 @@ Rules:
 - The root component should have id "root" (or use pagePrefix if provided)
 - Use "component" field to specify the component type
 - Use "children" array to reference child component IDs
+- Include a dataModel object, even when it is empty
 - Output ONLY the JSON, no markdown fences, no explanation
 `;

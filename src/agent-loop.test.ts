@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Message } from '@mariozechner/pi-ai';
-import { extractJson, validateSchema, trimMessages } from './agent-loop.js';
+import { extractJson, runAgentLoopWithTools, validateSchema, trimMessages } from './agent-loop.js';
+import type { OpenAIResponsesMessage } from './openai-responses-provider.js';
 
 describe('extractJson', () => {
   it('extracts JSON from a ```json fenced block', () => {
@@ -42,8 +42,8 @@ describe('validateSchema', () => {
 });
 
 describe('trimMessages', () => {
-  const msg = (i: number): Message =>
-    ({ role: 'user', content: String(i), timestamp: i } as Message);
+  const msg = (i: number): OpenAIResponsesMessage =>
+    ({ role: 'user', content: String(i), timestamp: i });
 
   it('leaves messages untouched when at or below the cap', () => {
     const messages = [msg(0), msg(1), msg(2)];
@@ -56,6 +56,70 @@ describe('trimMessages', () => {
     trimMessages(messages, 4);
     // keep = floor(4 * 0.7) = 2; splice(2, 10 - 2) removes 8, leaving the first 2
     expect(messages).toHaveLength(2);
-    expect(messages.map((m) => m.content)).toEqual(['0', '1']);
+    expect(messages.map((message) => message.role === 'user' || message.role === 'assistant' ? message.content : '')).toEqual(['0', '1']);
+  });
+});
+
+describe('runAgentLoopWithTools', () => {
+  it('replays a function call and returns its result using the same call_id', async () => {
+    const originalFetch = globalThis.fetch;
+    const requestBodies: Array<Record<string, unknown>> = [];
+    const encoder = new TextEncoder();
+    let callCount = 0;
+
+    globalThis.fetch = (async (_input, init) => {
+      requestBodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      callCount++;
+      const events = callCount === 1
+        ? [
+            'event: response.function_call_arguments.done\n',
+            'data: {"item_id":"item_1","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"Form\\"}],\\"dataModel\\":{}}"}\n\n',
+            'event: response.completed\n',
+            'data: {"response":{"output":[{"type":"function_call","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"Form\\"}],\\"dataModel\\":{}}"}]}}\n\n',
+          ]
+        : [
+            'event: response.completed\n',
+            'data: {"response":{"output":[{"type":"message","role":"assistant","content":[]}]}}\n\n',
+          ];
+      return new Response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          for (const event of events) controller.enqueue(encoder.encode(event));
+          controller.close();
+        },
+      }));
+    }) as typeof fetch;
+
+    try {
+      const events = [];
+      for await (const event of runAgentLoopWithTools({
+        prompt: '生成一个表单',
+        config: {
+          apiKey: 'test-key',
+          systemPrompt: 'system',
+          provider: 'openai',
+          useTools: true,
+        },
+      })) {
+        events.push(event);
+      }
+
+      expect(events).toContainEqual({ type: 'tool_use', name: 'set_components' });
+      expect(events).toContainEqual({
+        type: 'schema_updated',
+        schema: { components: [{ id: 'root', component: 'Form' }], dataModel: {} },
+      });
+      expect(events.at(-1)).toMatchObject({
+        type: 'done',
+        result: { schema: { components: [{ id: 'root', component: 'Form' }] }, turns: 2 },
+      });
+      expect(requestBodies).toHaveLength(2);
+      expect(requestBodies[1].input).toContainEqual({
+        type: 'function_call_output',
+        call_id: 'call_1',
+        output: 'Set 1 components',
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

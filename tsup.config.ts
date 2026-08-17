@@ -4,7 +4,6 @@ export default defineConfig({
   entry: { index: 'src/index.ts' },
   format: ['cjs', 'esm'],
   dts: true,
-  external: [/^@mariozechner\/pi-ai/],
   clean: true,
   minify: 'terser',
   terserOptions: {

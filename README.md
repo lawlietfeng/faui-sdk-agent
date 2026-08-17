@@ -1,13 +1,14 @@
 # faui-agent
 
-AI Agent 调度框架，通过 LLM 工具调用增量生成 [faui](https://github.com/lawlietfeng/faui) JSON Schema 页面。
+AI Agent 调度框架，通过 OpenAI Responses API 的工具调用增量生成 [faui-sdk](https://github.com/lawlietfeng/faui-sdk) Form JSON Schema。
 
 ## 特性
 
 - **工具化增量构建**：通过 `set_components` / `update_components` / `remove_components` 工具调用，LLM 增量修改 schema，而非每次全量生成
 - **多轮对话**：支持历史消息和已有 schema 传入，实现连续对话式页面编辑
 - **流式输出**：实时返回 LLM 文本、工具调用、schema 更新等事件
-- **多 LLM 支持**：Anthropic、OpenAI、Google、Azure、Groq、Mistral、xAI 等
+- **OpenAI Responses 协议**：支持 OpenAI 官方端点和兼容该协议的代理地址
+- **原生网络调用**：基于 Node.js 22 原生 `fetch`，不依赖 OpenAI SDK
 - **完全可定制**：system prompt、tools、tool executor、skills 均可外部传入
 - **内置安全机制**：工具参数运行时验证、消息历史自动裁剪、schema 快照回滚、连续失败熔断
 
@@ -27,7 +28,9 @@ LLM 通过工具调用增量构建 schema，支持多轮对话修改：
 import { FauiAgent, TOOL_SYSTEM_PROMPT } from '@lawlietfeng/faui-agent';
 
 const agent = new FauiAgent({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-5.6',
+  // baseUrl: 'https://your-proxy.example.com/v1',
   systemPrompt: TOOL_SYSTEM_PROMPT,
   useTools: true,
 });
@@ -74,7 +77,7 @@ LLM 直接输出完整 JSON，适合简单场景：
 import { FauiAgent, SYSTEM_BASE, builtinSkills } from '@lawlietfeng/faui-agent';
 
 const agent = new FauiAgent({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!,
   systemPrompt: SYSTEM_BASE,
   skills: builtinSkills,
 });
@@ -91,15 +94,16 @@ console.log(result.schema);
 |------|------|------|--------|------|
 | `apiKey` | `string` | ✅ | — | LLM API Key |
 | `systemPrompt` | `string` | ✅ | — | 系统提示词 |
-| `provider` | `string` | — | `'anthropic'` | LLM 提供商 |
-| `model` | `string` | — | `'claude-sonnet-4-20250514'` | 模型名称 |
-| `baseUrl` | `string` | — | — | 代理/自部署端点 URL |
+| `provider` | `'openai'` | — | `'openai'` | 仅支持 OpenAI Responses 协议 |
+| `model` | `string` | — | `'gpt-5.6'` | 模型名称 |
+| `baseUrl` | `string` | — | `https://api.openai.com/v1` | 代理/自部署端点 URL，必须兼容 Responses API |
 | `useTools` | `boolean` | — | `false` | 启用工具化增量构建模式 |
 | `tools` | `unknown[]` | — | `SCHEMA_TOOLS` | 自定义工具定义 |
 | `toolExecutor` | `Function` | — | `executeToolCall` | 自定义工具执行器 |
 | `skills` | `SkillDef[]` | — | — | Skills（非工具模式用） |
 | `skillPath` | `string` | — | — | 从目录加载 .md 格式 skills |
 | `temperature` | `number` | — | `0.3` | 温度参数 |
+| `maxOutputTokens` | `number` | — | `16384` | 单次生成最大输出 Token |
 | `maxTurns` | `number` | — | `10` | 最大循环轮次 |
 | `maxMessages` | `number` | — | `60` | 消息历史最大条数 |
 | `maxSnapshots` | `number` | — | `10` | Schema 快照最大保留数 |
@@ -208,21 +212,19 @@ const agent = new FauiAgent({
 ## 技术栈
 
 - TypeScript (strict mode)
-- [pi-ai](https://github.com/nicolecomputer/pi-ai) — 多 LLM 提供商抽象层
+- Node.js 22 原生 `fetch`、`ReadableStream`、`TextDecoder`
 - tsup — 构建（CJS + ESM + DTS）
 
 ## 在线预览
 
 - **表单版示例（含 Agent 演示）**: https://lawlietfeng.github.io/faui-landing-page/
-- **完整版示例**: https://lawlietfeng.github.io/full-landing-page/
 
 ## 相关项目
 
 | 项目 | 说明 |
 |------|------|
-| [faui](https://github.com/lawlietfeng/faui) | JSON Schema UI 渲染器，67+ 组件，本项目生成的 schema 由 faui 渲染 |
+| [faui-sdk](https://github.com/lawlietfeng/faui-sdk) | Form JSON Schema 渲染器，本项目生成的 schema 由其渲染 |
 | [faui-landing-page](https://github.com/lawlietfeng/faui-landing-page) | 表单版演示站点（含 Agent 演示页面） |
-| [full-landing-page](https://github.com/lawlietfeng/full-landing-page) | 完整版组件示例站点 |
 
 ## License
 
