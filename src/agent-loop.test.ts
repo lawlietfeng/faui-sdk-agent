@@ -22,8 +22,8 @@ describe('extractJson', () => {
 });
 
 describe('validateSchema', () => {
-  it('accepts a schema whose components all have id + component', () => {
-    expect(validateSchema({ components: [{ id: 'a', component: 'Text' }] })).toBe(true);
+  it('accepts a valid Form Edition schema', () => {
+    expect(validateSchema({ components: [{ id: 'root', component: 'form' }], dataModel: {} })).toBe(true);
   });
 
   it('rejects non-objects', () => {
@@ -31,13 +31,14 @@ describe('validateSchema', () => {
     expect(validateSchema('x')).toBe(false);
   });
 
-  it('rejects when components is not an array', () => {
+  it('rejects when components is not an array or dataModel is absent', () => {
     expect(validateSchema({ components: {} })).toBe(false);
+    expect(validateSchema({ components: [{ id: 'root', component: 'form' }] })).toBe(false);
   });
 
   it('rejects a component missing id or component', () => {
-    expect(validateSchema({ components: [{ id: 'a' }] })).toBe(false);
-    expect(validateSchema({ components: [{ component: 'Text' }] })).toBe(false);
+    expect(validateSchema({ components: [{ id: 'root' }], dataModel: {} })).toBe(false);
+    expect(validateSchema({ components: [{ component: 'form' }], dataModel: {} })).toBe(false);
   });
 });
 
@@ -73,9 +74,9 @@ describe('runAgentLoopWithTools', () => {
       const events = callCount === 1
         ? [
             'event: response.function_call_arguments.done\n',
-            'data: {"item_id":"item_1","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"Form\\"}],\\"dataModel\\":{}}"}\n\n',
+            'data: {"item_id":"item_1","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"form\\"}],\\"dataModel\\":{}}"}\n\n',
             'event: response.completed\n',
-            'data: {"response":{"output":[{"type":"function_call","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"Form\\"}],\\"dataModel\\":{}}"}]}}\n\n',
+            'data: {"response":{"output":[{"type":"function_call","call_id":"call_1","name":"set_components","arguments":"{\\"components\\":[{\\"id\\":\\"root\\",\\"component\\":\\"form\\"}],\\"dataModel\\":{}}"}]}}\n\n',
           ]
         : [
             'event: response.completed\n',
@@ -106,17 +107,17 @@ describe('runAgentLoopWithTools', () => {
       expect(events).toContainEqual({ type: 'tool_use', name: 'set_components' });
       expect(events).toContainEqual({
         type: 'schema_updated',
-        schema: { components: [{ id: 'root', component: 'Form' }], dataModel: {} },
+        schema: { components: [{ id: 'root', component: 'form' }], dataModel: {} },
       });
       expect(events.at(-1)).toMatchObject({
         type: 'done',
-        result: { schema: { components: [{ id: 'root', component: 'Form' }] }, turns: 2 },
+        result: { schema: { components: [{ id: 'root', component: 'form' }] }, turns: 2 },
       });
       expect(requestBodies).toHaveLength(2);
       expect(requestBodies[1].input).toContainEqual({
         type: 'function_call_output',
         call_id: 'call_1',
-        output: 'Set 1 components',
+        output: 'Set 1 components and validated schema',
       });
     } finally {
       globalThis.fetch = originalFetch;

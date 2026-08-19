@@ -43,9 +43,11 @@ Your output MUST be a valid JSON object matching this structure:
 
 Rules:
 - Every component needs a unique "id" field
-- The root component should have id "root" (or use pagePrefix if provided)
-- Use "component" field to specify the component type
-- Use "children" array to reference child component IDs
+- The schema must contain a root component with id "root"
+- Generate only faui-sdk Form Edition components
+- Use "component" field to specify the component type; containers reference child component IDs through "children"
+- A condition uses exactly one mode: when + then (optional else/default), or match + cases (optional default). Do not mix modes, use a "condition" property, or add children.
+- Use "\${$root.field}" for dynamic condition values; do not use { "path": "/field" } for when or match. Referenced fields must have initial dataModel values.
 - Include a dataModel object, even when it is empty
 - Output ONLY the JSON, no markdown fences, no explanation
 `;

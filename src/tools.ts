@@ -3,18 +3,18 @@ import { Type } from '@sinclair/typebox';
 export const SCHEMA_TOOLS = [
   {
     name: 'set_components',
-    description: 'Initialize or completely replace the page schema with new components and optional dataModel',
+    description: 'Initialize a Form Edition schema. Use only for the first creation and always include dataModel. Components may include a style object with React inline CSS; when a UI style directive is present, encode the requested visual result in those style values.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),
         component: Type.String(),
       }, { additionalProperties: true })),
-      dataModel: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+      dataModel: Type.Record(Type.String(), Type.Unknown()),
     }),
   },
   {
     name: 'update_components',
-    description: 'Update existing components by ID or add new components if ID does not exist',
+    description: 'Update existing components by ID or add new Form Edition components. Use this tool to add or update component style objects when applying a UI style directive.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),

@@ -43,14 +43,14 @@ export interface FauiAgentConfig {
   /** 自定义工具执行器（不传则使用内置 executeToolCall） */
   toolExecutor?: (name: string, args: Record<string, unknown>, schema: PageSchema) => ToolResult;
 
-  /** Skills（非工具模式用，可选） */
+  /** 额外 Skills；显式传入的 Skills 会与自动选择的 Form Skills 一同加载 */
   skills?: SkillDef[];
   /** 从指定目录加载 .md 格式的 skills（可选） */
   skillPath?: string;
 
   /** 消息历史最大条数，超出后裁剪早期消息，默认 60 */
   maxMessages?: number;
-  /** schema 快照最大保留数，默认 10 */
+  /** @deprecated 工具会在副本上执行，失败更新不会写入当前 Schema。 */
   maxSnapshots?: number;
   /** JSON 解析连续失败次数上限，达到后终止，默认 3 */
   maxConsecutiveFailures?: number;
@@ -86,6 +86,16 @@ export class FauiAgent {
     return this.skillStore;
   }
 
+  private async getRuntimeConfig(): Promise<FauiAgentConfig> {
+    if (!this.skillStore) return this.config;
+
+    const loadedSkills = await this.skillStore.load();
+    return {
+      ...this.config,
+      skills: [...(this.config.skills ?? []), ...loadedSkills],
+    };
+  }
+
   /**
    * 生成 faui 页面 JSON
    * @param prompt 页面描述
@@ -95,9 +105,10 @@ export class FauiAgent {
     prompt: string,
     options?: GeneratePageOptions,
   ): Promise<GeneratePageResult> {
+    const config = await this.getRuntimeConfig();
     return runAgentLoop({
       prompt,
-      config: this.config,
+      config,
       options,
     });
   }
@@ -111,12 +122,13 @@ export class FauiAgent {
     prompt: string,
     options?: GeneratePageOptions,
   ): AsyncGenerator<StreamEvent> {
-    if (this.config.useTools) {
-      yield* runAgentLoopWithTools({ prompt, config: this.config, options });
+    const config = await this.getRuntimeConfig();
+    if (config.useTools) {
+      yield* runAgentLoopWithTools({ prompt, config, options });
     } else {
       yield* runAgentLoopStream({
         prompt,
-        config: this.config,
+        config,
         options,
       });
     }

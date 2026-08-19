@@ -1,134 +1,213 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { validateFormSchema } from './form-schema.js';
 import { executeToolCall } from './tool-executor.js';
 import type { PageSchema } from './types.js';
 
-const empty: PageSchema = { components: [] };
+const empty: PageSchema = { components: [], dataModel: {} };
+
+function createValidSchema(): PageSchema {
+  return {
+    components: [
+      { id: 'root', component: 'form', submitButtonId: 'submit', children: ['name-item', 'submit'] },
+      { id: 'name-item', component: 'box', children: ['name-label', 'name-input'] },
+      { id: 'name-label', component: 'text', content: '姓名' },
+      {
+        id: 'name-input',
+        component: 'input',
+        value: { path: '/name' },
+        rules: [{ required: true, message: '请输入姓名' }],
+      },
+      { id: 'submit', component: 'button', label: '提交' },
+    ],
+    dataModel: { name: '' },
+  };
+}
 
 describe('executeToolCall', () => {
   describe('set_components', () => {
-    it('sets components and optional dataModel', () => {
-      const res = executeToolCall(
-        'set_components',
-        { components: [{ id: 'a', component: 'Text' }], dataModel: { x: 1 } },
-        empty,
-      );
-      expect(res.schema.components).toHaveLength(1);
-      expect(res.schema.dataModel).toEqual({ x: 1 });
-      expect(res.message).toContain('Set 1 components');
+    it('sets and validates a complete Form Edition schema', () => {
+      const schema = createValidSchema();
+      const result = executeToolCall('set_components', { ...schema }, empty);
+      expect(result.schema).toEqual(schema);
+      expect(result.message).toContain('validated schema');
     });
 
-    it('rejects a non-array components arg', () => {
-      expect(() =>
-        executeToolCall('set_components', { components: 'nope' }, empty),
-      ).toThrow('components must be an array');
+    it('requires dataModel', () => {
+      expect(() => executeToolCall('set_components', { components: [] }, empty))
+        .toThrow('dataModel must be a plain object');
     });
 
-    it('rejects a component missing an id', () => {
-      expect(() =>
-        executeToolCall('set_components', { components: [{ component: 'Text' }] }, empty),
-      ).toThrow(/missing id/);
+    it('requires root and Form Edition components', () => {
+      expect(() => executeToolCall('set_components', {
+        components: [{ id: 'root', component: 'table' }],
+        dataModel: {},
+      }, empty)).toThrow(/不支持的组件: table/);
     });
 
-    it('rejects a component missing the component field', () => {
-      expect(() =>
-        executeToolCall('set_components', { components: [{ id: 'a' }] }, empty),
-      ).toThrow(/missing component field/);
-    });
-
-    it('blocks a destructive replace that drops >30% of existing components', () => {
-      const current: PageSchema = {
-        components: [
-          { id: 'a', component: 'Text' },
-          { id: 'b', component: 'Text' },
-          { id: 'c', component: 'Text' },
-        ],
-      };
-      // replacing 3 with 1 keeps 0 of the originals -> way over the 30% threshold
-      expect(() =>
-        executeToolCall('set_components', { components: [{ id: 'z', component: 'Text' }] }, current),
-      ).toThrow(/会丢失/);
+    it('rejects set_components after a schema exists', () => {
+      expect(() => executeToolCall('set_components', { ...createValidSchema() }, createValidSchema()))
+        .toThrow('schema 已存在组件');
     });
   });
 
   describe('update_components', () => {
-    it('merges fields into an existing component and appends new ones', () => {
-      const current: PageSchema = { components: [{ id: 'a', component: 'Text', props: { v: 1 } }] };
-      const res = executeToolCall(
-        'update_components',
-        { components: [{ id: 'a', props: { v: 2 } }, { id: 'b', component: 'Button' }] },
-        current,
-      );
-      const byId = Object.fromEntries(res.schema.components.map((c) => [c.id, c]));
-      expect(byId.a.props).toEqual({ v: 2 });
-      expect(byId.a.component).toBe('Text'); // preserved
-      expect(byId.b.component).toBe('Button'); // appended
+    it('merges an existing component and validates the result', () => {
+      const result = executeToolCall('update_components', {
+        components: [{ id: 'name-input', placeholder: '请输入姓名' }],
+      }, createValidSchema());
+      expect(result.schema.components.find(component => component.id === 'name-input')?.placeholder)
+        .toBe('请输入姓名');
+    });
+
+    it('requires component when adding a component', () => {
+      expect(() => executeToolCall('update_components', {
+        components: [{ id: 'new-field' }],
+      }, createValidSchema())).toThrow('new component new-field missing component field');
+    });
+
+    it('rejects updates that make the schema invalid', () => {
+      expect(() => executeToolCall('update_components', {
+        components: [{ id: 'name-input', component: 'table' }],
+      }, createValidSchema())).toThrow(/不支持的组件: table/);
     });
   });
 
   describe('remove_components', () => {
-    it('removes components and prunes dangling child references', () => {
-      const current: PageSchema = {
-        components: [
-          { id: 'parent', component: 'Box', children: ['a', 'b'] },
-          { id: 'a', component: 'Text' },
-          { id: 'b', component: 'Text' },
-        ],
-      };
-      const res = executeToolCall('remove_components', { ids: ['a'] }, current);
-      const ids = res.schema.components.map((c) => c.id);
-      expect(ids).not.toContain('a');
-      const parent = res.schema.components.find((c) => c.id === 'parent')!;
-      expect(parent.children).toEqual(['b']);
+    it('prunes children references and keeps a valid schema', () => {
+      const schema = createValidSchema();
+      schema.components.splice(4, 0, { id: 'hint', component: 'text', content: '请填写真实姓名' });
+      schema.components[1].children = ['name-label', 'name-input', 'hint'];
+      const result = executeToolCall('remove_components', { ids: ['hint'] }, schema);
+      expect(result.schema.components.some(component => component.id === 'hint')).toBe(false);
+      expect(result.schema.components.find(component => component.id === 'name-item')?.children)
+        .toEqual(['name-label', 'name-input']);
     });
+
+  it('rejects removals that break required label relationships', () => {
+    expect(() => executeToolCall('remove_components', { ids: ['name-label'] }, createValidSchema()))
+      .toThrow(/必填字段 name-input/);
+  });
+
+  it('removes references from condition branches', () => {
+    const schema: PageSchema = {
+      components: [
+        { id: 'root', component: 'form', children: ['conditional-name'] },
+        { id: 'conditional-name', component: 'condition', when: true, then: ['name-item'] },
+        { id: 'name-item', component: 'box', children: ['name-label', 'name-input'] },
+        { id: 'name-label', component: 'text', content: '姓名' },
+        { id: 'name-input', component: 'input', value: { path: '/name' } },
+      ],
+      dataModel: { name: '' },
+    };
+    const result = executeToolCall('remove_components', {
+      ids: ['name-item', 'name-label', 'name-input'],
+    }, schema);
+    expect(result.schema.components.find(component => component.id === 'conditional-name')?.then).toEqual([]);
+  });
   });
 
   describe('update_data_model', () => {
-    it('deep-merges into the existing dataModel', () => {
-      const current: PageSchema = { components: [], dataModel: { a: { x: 1 }, keep: true } };
-      const res = executeToolCall('update_data_model', { dataModel: { a: { y: 2 } } }, current);
-      expect(res.schema.dataModel).toEqual({ a: { x: 1, y: 2 }, keep: true });
-    });
-
-    it('rejects a non-object dataModel', () => {
-      expect(() =>
-        executeToolCall('update_data_model', { dataModel: [1, 2] }, empty),
-      ).toThrow('dataModel must be a plain object');
+    it('deep-merges dataModel and keeps bindings valid', () => {
+      const current = createValidSchema();
+      current.dataModel = { name: '', profile: { active: true } };
+      const result = executeToolCall('update_data_model', {
+        dataModel: { profile: { score: 5 } },
+      }, current);
+      expect(result.schema.dataModel).toEqual({ name: '', profile: { active: true, score: 5 } });
     });
   });
 
   describe('validate_schema', () => {
-    it('passes a well-formed schema', () => {
-      const current: PageSchema = {
-        components: [
-          { id: 'root', component: 'Box', children: ['child'] },
-          { id: 'child', component: 'Text' },
-        ],
-      };
-      const res = executeToolCall('validate_schema', {}, current);
-      expect(res.message).toContain('校验通过');
+    it('reports valid Form Edition schemas', () => {
+      expect(executeToolCall('validate_schema', {}, createValidSchema()).message).toContain('校验通过');
     });
 
-    it('reports duplicate IDs', () => {
-      const current: PageSchema = {
-        components: [
-          { id: 'dup', component: 'Text' },
-          { id: 'dup', component: 'Text' },
-        ],
-      };
-      const res = executeToolCall('validate_schema', {}, current);
-      expect(res.message).toContain('重复 ID: dup');
-    });
-
-    it('reports a child reference to a non-existent component', () => {
-      const current: PageSchema = {
-        components: [{ id: 'root', component: 'Box', children: ['ghost'] }],
-      };
-      const res = executeToolCall('validate_schema', {}, current);
-      expect(res.message).toContain('不存在的子组件: ghost');
+    it('reports missing bound dataModel fields', () => {
+      const schema = createValidSchema();
+      schema.dataModel = {};
+      expect(executeToolCall('validate_schema', {}, schema).message).toContain('绑定的 dataModel 路径不存在: /name');
     });
   });
+});
 
-  it('throws on an unknown tool name', () => {
-    expect(() => executeToolCall('frobnicate', {}, empty)).toThrow('Unknown tool: frobnicate');
+describe('validateFormSchema', () => {
+  it('requires every component to be reachable from root', () => {
+    const schema = createValidSchema();
+    schema.components.push({ id: 'orphan', component: 'text', content: '孤立节点' });
+    expect(validateFormSchema(schema).errors).toContain('组件 orphan 无法从 root 访问');
+  });
+
+  it('rejects cycles in children references', () => {
+    const schema = createValidSchema();
+    schema.components[1].children = ['name-label', 'name-input', 'root'];
+    expect(validateFormSchema(schema).errors).toContain('组件 children 不能形成循环引用');
+  });
+
+  it('allows relative bindings only inside a repeater', () => {
+    const schema: PageSchema = {
+      components: [
+        { id: 'root', component: 'form', children: ['items'] },
+        { id: 'items', component: 'repeater', data: { path: '/items' }, children: ['item'] },
+        { id: 'item', component: 'box', children: ['done'] },
+        { id: 'done', component: 'checkbox', checked: { path: './done' } },
+      ],
+      dataModel: { items: [{ done: false }] },
+    };
+    expect(validateFormSchema(schema).valid).toBe(true);
+  });
+
+  it('traverses condition branches as part of the component tree', () => {
+    const schema: PageSchema = {
+      components: [
+        { id: 'root', component: 'form', children: ['conditional-name'] },
+        { id: 'conditional-name', component: 'condition', when: true, then: ['name-item'] },
+        { id: 'name-item', component: 'box', children: ['name-label', 'name-input'] },
+        { id: 'name-label', component: 'text', content: '姓名' },
+        {
+          id: 'name-input',
+          component: 'input',
+          value: { path: '/name' },
+          rules: [{ required: true, message: '请输入姓名' }],
+        },
+      ],
+      dataModel: { name: '' },
+    };
+    expect(validateFormSchema(schema).valid).toBe(true);
+  });
+
+  it('validates Form control bindings and all action events', () => {
+    const schema = createValidSchema();
+    schema.components.find(component => component.id === 'name-input')!.disabled = { path: '/nameDisabled' };
+    schema.components.push({
+      id: 'dialog',
+      component: 'modal',
+      on_ok: { action: 'not_supported' },
+    });
+    schema.components[0].children?.push('dialog');
+    const errors = validateFormSchema(schema).errors;
+    expect(errors).toContain('组件 name-input 绑定的 dataModel 路径不存在: /nameDisabled');
+    expect(errors).toContain('组件 dialog.on_ok 使用了未支持的 action: not_supported');
+  });
+
+  it('requires reciprocal constraints for two bound date pickers', () => {
+    const schema: PageSchema = {
+      components: [
+        { id: 'root', component: 'form', children: ['start-date', 'end-date'] },
+        { id: 'start-date', component: 'datepicker', value: { path: '/startDate' } },
+        {
+          id: 'end-date',
+          component: 'datepicker',
+          value: { path: '/endDate' },
+          disabledDate: { before: { path: '/startDate' } },
+        },
+      ],
+      dataModel: { startDate: null, endDate: null },
+    };
+    expect(validateFormSchema(schema).errors).toContain(
+      '日期字段 end-date 限制不得早于 start-date 时，start-date 也必须限制不得晚于 end-date',
+    );
+
+    schema.components[1].disabledDate = { after: { path: '/endDate' } };
+    expect(validateFormSchema(schema).valid).toBe(true);
   });
 });

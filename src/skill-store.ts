@@ -1,9 +1,9 @@
 /**
  * Skill Store — 统一的 skill 加载与缓存
  *
- * 两种来源互斥：
- * - 内置 skill：编译时内联到代码中，经 terser 混淆，无明文泄露
- * - 用户自定义：运行时从指定 .md 文件路径读取
+ * 两种来源：
+ * - 内置 skill：编译时内联到代码中
+ * - 用户自定义：运行时从指定 .md 文件路径读取，并作为额外 Skill 注入
  *
  * 加载后的 skill 内容缓存在内存中，构建系统提示时
  * 通过 cache_control: { type: 'ephemeral' } 利用 Anthropic prompt caching。
@@ -108,7 +108,7 @@ export class SkillStore {
     if (this.skills) return this.skills;
 
     if (this.config.skillPath) {
-      // 用户自定义路径：读 .md 文件
+      // 用户自定义路径：读额外 .md Skills
       this.skills = await loadSkillsFromDir(this.config.skillPath);
     } else {
       // 内置 skill：编译时内联

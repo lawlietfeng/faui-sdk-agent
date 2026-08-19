@@ -11,7 +11,6 @@ import {
   FauiAgent,
   TOOL_SYSTEM_PROMPT,
   SYSTEM_BASE,
-  builtinSkills,
 } from '../src/index.js';
 import type { PageSchema, StreamEvent } from '../src/index.js';
 
@@ -79,10 +78,9 @@ console.log('=== 示例 3：非工具模式 ===\n');
 const simpleAgent = new FauiAgent({
   apiKey,
   systemPrompt: SYSTEM_BASE,
-  skills: builtinSkills,
 });
 
-const result = await simpleAgent.generatePage('生成一个登录表单，包含用户名和密码');
+const result = await simpleAgent.generatePage('生成一个包含姓名和备注的反馈表单');
 console.log('组件数:', result.schema.components.length);
 console.log('轮次:', result.turns);
 console.log('JSON:\n', JSON.stringify(result.schema, null, 2));

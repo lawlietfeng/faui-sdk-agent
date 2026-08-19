@@ -9,8 +9,10 @@ AI Agent 调度框架，通过 OpenAI Responses API 的工具调用增量生成 
 - **流式输出**：实时返回 LLM 文本、工具调用、schema 更新等事件
 - **OpenAI Responses 协议**：支持 OpenAI 官方端点和兼容该协议的代理地址
 - **原生网络调用**：基于 Node.js 22 原生 `fetch`，不依赖 OpenAI SDK
-- **完全可定制**：system prompt、tools、tool executor、skills 均可外部传入
-- **内置安全机制**：工具参数运行时验证、消息历史自动裁剪、schema 快照回滚、连续失败熔断
+- **按需 Skills**：始终加载表单基础规则，并按需求自动加载字段、校验和动作知识
+- **Form Edition 约束**：只生成 `faui-sdk` Form Edition 组件，不生成 `full` 专属组件
+- **自动校验**：每次 Schema 修改后校验根节点、绑定、组件白名单、表单提交和必填标签结构
+- **完全可定制**：system prompt、tools、tool executor、额外 skills 均可外部传入
 
 ## 安装
 
@@ -74,15 +76,14 @@ for await (const event of agent.generatePageStream('把开始日期和结束日�
 LLM 直接输出完整 JSON，适合简单场景：
 
 ```typescript
-import { FauiAgent, SYSTEM_BASE, builtinSkills } from '@lawlietfeng/faui-agent';
+import { FauiAgent, SYSTEM_BASE } from '@lawlietfeng/faui-agent';
 
 const agent = new FauiAgent({
   apiKey: process.env.OPENAI_API_KEY!,
   systemPrompt: SYSTEM_BASE,
-  skills: builtinSkills,
 });
 
-const result = await agent.generatePage('生成一个登录表单');
+const result = await agent.generatePage('生成一个包含姓名和备注的反馈表单');
 console.log(result.schema);
 ```
 
@@ -100,13 +101,13 @@ console.log(result.schema);
 | `useTools` | `boolean` | — | `false` | 启用工具化增量构建模式 |
 | `tools` | `unknown[]` | — | `SCHEMA_TOOLS` | 自定义工具定义 |
 | `toolExecutor` | `Function` | — | `executeToolCall` | 自定义工具执行器 |
-| `skills` | `SkillDef[]` | — | — | Skills（非工具模式用） |
+| `skills` | `SkillDef[]` | — | — | 额外 Skills；会与自动选择的 Form Skills 一起加载 |
 | `skillPath` | `string` | — | — | 从目录加载 .md 格式 skills |
 | `temperature` | `number` | — | `0.3` | 温度参数 |
 | `maxOutputTokens` | `number` | — | `16384` | 单次生成最大输出 Token |
 | `maxTurns` | `number` | — | `10` | 最大循环轮次 |
 | `maxMessages` | `number` | — | `60` | 消息历史最大条数 |
-| `maxSnapshots` | `number` | — | `10` | Schema 快照最大保留数 |
+| `maxSnapshots` | `number` | — | — | 已弃用；失败工具调用不会写入当前 Schema |
 | `maxConsecutiveFailures` | `number` | — | `3` | JSON 解析连续失败上限 |
 
 ### GeneratePageOptions
@@ -142,7 +143,7 @@ import {
   SYSTEM_BASE,         // 非工具模式基础提示词
   SCHEMA_TOOLS,        // 内置工具定义（set/update/remove/validate）
   executeToolCall,     // 内置工具执行器
-  builtinSkills,       // 内置 skills（组件目录、布局模式、数据绑定、踩坑记录）
+  builtinSkills,       // 内置 Form Skills
   SkillStore,          // Skill 加载器（支持从 .md 文件加载）
 } from '@lawlietfeng/faui-agent';
 ```
@@ -151,20 +152,27 @@ import {
 
 | 工具 | 说明 |
 |------|------|
-| `set_components` | 初始化页面 schema（首次生成） |
-| `update_components` | 按 ID 更新或新增组件 |
+| `set_components` | 初始化并校验页面 schema（首次生成，必须提供 dataModel） |
+| `update_components` | 按 ID 更新或新增组件，并自动校验 |
 | `remove_components` | 按 ID 删除组件 |
-| `update_data_model` | 深度合并 dataModel |
+| `update_data_model` | 深度合并 dataModel，并自动校验 |
 | `validate_schema` | 校验 schema 完整性 |
 
 ### 内置 Skills
 
 | Skill | 说明 |
 |-------|------|
-| `component-catalog` | 67+ faui 组件清单、字段说明、适用场景 |
-| `layout-patterns` | 常见布局模式（居中、栅格、响应式、深浅交替） |
-| `data-binding` | 数据绑定规则、表达式语法、Action 系统 |
-| `pitfalls` | 14 条踩坑记录与最佳实践 |
+| `form-core` | Form Schema、绑定、标签、校验和内部提交基础规则；始终加载 |
+| `form-layout` | 分组、栅格和按钮区布局 |
+| `field-text` | 文本、数字、自动补全和提及输入 |
+| `field-choice` | 下拉、单选、多选、开关和分段选择 |
+| `field-date` | 日期、时间和日历 |
+| `field-advanced` | 上传、层级选择、穿梭、评分、滑块和颜色 |
+| `validation-submit` | 校验、内部提交和重置 |
+| `actions` | HTTP、消息、通知和字段联动 |
+| `dynamic-form` | 条件与重复表单项；仅在明确需要时加载 |
+
+默认不生成视觉样式、虚构接口或成功提示。用户未提供业务动作时，提交按钮只执行表单校验。
 
 ## 自定义扩展
 

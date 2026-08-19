@@ -6,6 +6,10 @@ import {
   type OpenAIResponsesTool,
 } from './openai-responses-provider.js';
 import type { GeneratePageOptions, GeneratePageResult, PageSchema, StreamEvent } from './types.js';
+import { validateFormSchema } from './form-schema.js';
+import type { SkillDef } from './skill-store.js';
+import { selectFormSkills } from './skill-selector.js';
+import { builtinSkills } from './skills/index.js';
 import { SCHEMA_TOOLS } from './tools.js';
 import { executeToolCall } from './tool-executor.js';
 
@@ -54,7 +58,7 @@ function buildSystemPrompt(base: string, skillContent: string, options?: Generat
     prompt += '\n' + skillContent;
   }
   if (options?.pagePrefix) {
-    prompt += `\nUse "${options.pagePrefix}" as prefix for all component IDs (e.g. "${options.pagePrefix}-root").`;
+    prompt += `\nUse "${options.pagePrefix}" as the prefix for non-root component IDs (e.g. "${options.pagePrefix}-name"). Keep the root ID exactly "root".`;
   }
   if (options?.existingIds?.length) {
     prompt += `\nAvoid these existing IDs: ${options.existingIds.join(', ')}`;
@@ -77,19 +81,10 @@ export function extractJson(text: string): string {
 }
 
 export function validateSchema(schema: unknown): schema is PageSchema {
-  if (!schema || typeof schema !== 'object') return false;
-  const s = schema as Record<string, unknown>;
-  if (!Array.isArray(s.components)) return false;
-  for (const component of s.components) {
-    if (!component || typeof component !== 'object') return false;
-    const record = component as Record<string, unknown>;
-    if (typeof record.id !== 'string' || typeof record.component !== 'string') return false;
-  }
-  return true;
+  return validateFormSchema(schema).valid;
 }
 
 const DEFAULT_MAX_MESSAGES = 60;
-const DEFAULT_MAX_SNAPSHOTS = 10;
 const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3;
 
 export function trimMessages(messages: OpenAIResponsesMessage[], maxMessages: number): void {
@@ -110,30 +105,31 @@ function appendHistory(messages: OpenAIResponsesMessage[], options?: GeneratePag
   }
 }
 
-function buildPromptAndSkills(config: FauiAgentConfig, options?: GeneratePageOptions): {
+function buildPromptAndSkills(config: FauiAgentConfig, prompt: string, options?: GeneratePageOptions): {
   systemPrompt: string;
   skillsUsed: string[];
 } {
-  if (config.skills && config.skills.length > 0) {
-    const skillContent = config.skills
-      .map((skill) => `<skill name="${skill.name}">\n${skill.content}\n</skill>`)
-      .join('\n\n');
-    return {
-      systemPrompt: buildSystemPrompt(config.systemPrompt, skillContent, options),
-      skillsUsed: config.skills.map((skill) => skill.name),
-    };
+  const automaticSkills = selectFormSkills(`${prompt}\n${options?.context ?? ''}`, builtinSkills);
+  const customSkills = config.skills ?? [];
+  const allSkills = new Map<string, SkillDef>();
+  for (const skill of automaticSkills) allSkills.set(skill.name, skill);
+  for (const skill of customSkills) {
+    if (!allSkills.has(skill.name)) allSkills.set(skill.name, skill);
   }
-
+  const selectedSkills = [...allSkills.values()];
+  const skillContent = selectedSkills
+    .map((skill) => `<skill name="${skill.name}">\n${skill.content}\n</skill>`)
+    .join('\n\n');
   return {
-    systemPrompt: buildSystemPrompt(config.systemPrompt, '', options),
-    skillsUsed: [],
+    systemPrompt: buildSystemPrompt(config.systemPrompt, skillContent, options),
+    skillsUsed: selectedSkills.map((skill) => skill.name),
   };
 }
 
 export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePageResult> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, options);
+  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
   const provider = new OpenAIResponsesProvider();
   const messages: OpenAIResponsesMessage[] = [
     { role: 'user', content: prompt, timestamp: Date.now() },
@@ -174,19 +170,20 @@ export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePag
       continue;
     }
 
-    if (!validateSchema(parsed)) {
+    const validation = validateFormSchema(parsed);
+    if (!validation.valid) {
       messages.push(
         { role: 'response', outputItems: result.outputItems, timestamp: Date.now() },
         {
           role: 'user',
-          content: 'The JSON is valid but missing required fields. Ensure "components" is an array where each item has "id" and "component" fields. Try again.',
+          content: `Schema 校验失败：${validation.errors.join('\n')}。请只输出符合 Form Edition 规则的完整 JSON。`,
           timestamp: Date.now(),
         },
       );
       continue;
     }
 
-    return { schema: parsed, skillsUsed, turns };
+    return { schema: parsed as PageSchema, skillsUsed, turns };
   }
 
   throw new Error(`faui-agent: failed to generate valid schema after ${maxTurns} turns`);
@@ -195,7 +192,7 @@ export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePag
 export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerator<StreamEvent> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, options);
+  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
   const provider = new OpenAIResponsesProvider();
   const messages: OpenAIResponsesMessage[] = [];
   appendHistory(messages, options);
@@ -279,20 +276,21 @@ export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerat
       continue;
     }
 
-    if (!validateSchema(parsed)) {
+    const validation = validateFormSchema(parsed);
+    if (!validation.valid) {
       yield { type: 'status', message: '结构校验未通过，正在重试...' };
       messages.push(
         { role: 'response', outputItems: finalResult.outputItems, timestamp: Date.now() },
         {
           role: 'user',
-          content: 'The JSON is valid but missing required fields. Ensure "components" is an array where each item has "id" and "component" fields. Try again.',
+          content: `Schema 校验失败：${validation.errors.join('\n')}。请只输出符合 Form Edition 规则的完整 JSON。`,
           timestamp: Date.now(),
         },
       );
       continue;
     }
 
-    const result: GeneratePageResult = { schema: parsed, skillsUsed, turns };
+    const result: GeneratePageResult = { schema: parsed as PageSchema, skillsUsed, turns };
     yield { type: 'done', result };
     return result;
   }
@@ -304,19 +302,31 @@ export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerat
 export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGenerator<StreamEvent> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const systemPrompt = buildSystemPrompt(config.systemPrompt, '', options);
+  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
   const provider = new OpenAIResponsesProvider();
   const configuredTools = getConfiguredTools(config);
   const executeConfiguredTool = config.toolExecutor ?? executeToolCall;
 
-  let currentSchema: PageSchema = options?.currentSchema
-    ? JSON.parse(JSON.stringify(options.currentSchema))
+  const suppliedSchema = options?.currentSchema;
+  if (suppliedSchema) {
+    const validation = validateFormSchema(suppliedSchema);
+    if (!validation.valid) {
+      const message = `当前 schema 校验失败：${validation.errors.join('\n')}`;
+      yield { type: 'error', message };
+      throw new Error(message);
+    }
+  }
+  let currentSchema: PageSchema = suppliedSchema
+    ? JSON.parse(JSON.stringify(suppliedSchema))
     : { components: [], dataModel: {} };
   let hasSetComponents = currentSchema.components.length > 0;
-  const schemaSnapshots: PageSchema[] = [];
   const messages: OpenAIResponsesMessage[] = [];
   appendHistory(messages, options);
   messages.push({ role: 'user', content: prompt, timestamp: Date.now() });
+
+  if (skillsUsed.length > 0) {
+    yield { type: 'skills_loaded', skills: skillsUsed };
+  }
 
   if (currentSchema.components.length > 0) {
     messages.splice(messages.length - 1, 0, {
@@ -327,7 +337,6 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
   }
 
   const maxMessages = config.maxMessages ?? DEFAULT_MAX_MESSAGES;
-  const maxSnapshots = config.maxSnapshots ?? DEFAULT_MAX_SNAPSHOTS;
   let turns = 0;
 
   for (let index = 0; index < maxTurns; index++) {
@@ -377,7 +386,15 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
     const toolCalls = pendingToolCalls.length > 0 ? pendingToolCalls : finalResult.toolCalls;
 
     if (toolCalls.length === 0) {
-      yield { type: 'done', result: { schema: currentSchema, skillsUsed: ['tools'], turns } };
+      if (currentSchema.components.length === 0) {
+        messages.push({
+          role: 'user',
+          content: '尚未创建有效 Schema。请调用 set_components，并提供完整 Form Edition components 和 dataModel。',
+          timestamp: Date.now(),
+        });
+        continue;
+      }
+      yield { type: 'done', result: { schema: currentSchema, skillsUsed, turns } };
       return;
     }
 
@@ -386,14 +403,18 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
 
       try {
         if (toolCall.argumentsError) throw new Error(toolCall.argumentsError);
-        const result = executeConfiguredTool(toolCall.name, toolCall.arguments, currentSchema);
+        const schemaBeforeTool = JSON.parse(JSON.stringify(currentSchema)) as PageSchema;
+        const result = executeConfiguredTool(toolCall.name, toolCall.arguments, schemaBeforeTool);
+        if (toolCall.name !== 'validate_schema') {
+          const validation = validateFormSchema(result.schema);
+          if (!validation.valid) throw new Error(validation.errors.join('\n'));
+        }
 
-        if (schemaSnapshots.length >= maxSnapshots) schemaSnapshots.shift();
-        schemaSnapshots.push(JSON.parse(JSON.stringify(currentSchema)));
-        currentSchema = result.schema;
-
-        if (toolCall.name === 'set_components') hasSetComponents = true;
-        yield { type: 'schema_updated', schema: { ...currentSchema } };
+        if (toolCall.name !== 'validate_schema') {
+          currentSchema = result.schema;
+          if (toolCall.name === 'set_components') hasSetComponents = true;
+          yield { type: 'schema_updated', schema: { ...currentSchema } };
+        }
         messages.push({
           role: 'tool',
           callId: toolCall.id,
@@ -403,7 +424,6 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
           timestamp: Date.now(),
         });
       } catch (error) {
-        if (schemaSnapshots.length > 0) currentSchema = schemaSnapshots[schemaSnapshots.length - 1];
         messages.push({
           role: 'tool',
           callId: toolCall.id,
@@ -417,7 +437,7 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
   }
 
   if (currentSchema.components.length > 0) {
-    yield { type: 'done', result: { schema: currentSchema, skillsUsed: ['tools'], turns } };
+    yield { type: 'done', result: { schema: currentSchema, skillsUsed, turns } };
     return;
   }
 

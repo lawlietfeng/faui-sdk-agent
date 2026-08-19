@@ -16,7 +16,7 @@ export interface PageComponent {
 /** 页面 JSON Schema */
 export interface PageSchema {
   components: PageComponent[];
-  dataModel?: Record<string, unknown>;
+  dataModel: Record<string, unknown>;
 }
 
 /** 页面生成选项 */
