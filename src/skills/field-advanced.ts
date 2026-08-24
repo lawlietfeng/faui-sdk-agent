@@ -9,7 +9,7 @@ export const fieldAdvancedSkill: SkillDef = {
 - \`upload\`：使用 \`value.path\`，支持 \`accept\`、\`multiple\`、\`maxCount\`、\`listType\`、\`showUploadList\`、\`disabled\`；初始值为 \`[]\`。
 - \`cascader\`：层级选项使用 \`options\`，选中值通常为数组。
 - \`treeselect\`：树形选项使用 \`options\`；按需使用 \`multiple\`。
-- \`transfer\`：使用 \`options\` 提供可选项，并用 \`value.path\` 绑定已选值数组；只在选项数据明确时生成。
+- \`transfer\`：按当前 Form Component Contract 使用 \`data.path\` 绑定数据数组；只在选项数据明确时生成。不要根据其他版本文档猜测属性。
 - \`slider\`：数值或范围选择，支持 \`min\`、\`max\`、\`step\`、\`range\`。
 - \`rate\`：评分，支持 \`count\`、\`allowHalf\`。
 - \`colorpicker\`：颜色选择，使用 \`value.path\`。

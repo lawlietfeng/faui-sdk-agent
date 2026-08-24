@@ -189,6 +189,33 @@ describe('validateFormSchema', () => {
     expect(errors).toContain('组件 dialog.on_ok 使用了未支持的 action: not_supported');
   });
 
+  it('uses the SDK contract for Condition paths and dynamic property capabilities', () => {
+    const schema: PageSchema = {
+      components: [
+        { id: 'root', component: 'form', children: ['by-when', 'by-match', 'dialog'] },
+        { id: 'by-when', component: 'condition', when: { path: '/enabled' }, then: [] },
+        { id: 'by-match', component: 'condition', match: { path: '/status' }, cases: {} },
+        { id: 'dialog', component: 'modal', open: { path: '/dialogOpen' } },
+      ],
+      dataModel: { enabled: false, status: 'idle', dialogOpen: false },
+    };
+    expect(validateFormSchema(schema).valid).toBe(true);
+
+    const invalid = {
+      ...schema,
+      components: schema.components.map(component => component.id === 'dialog'
+        ? { ...component, open: '${$root.dialogOpen}' }
+        : component),
+    };
+    expect(validateFormSchema(invalid).errors).toContain('组件 dialog.open 不支持表达式绑定');
+  });
+
+  it('rejects properties not declared by the SDK contract', () => {
+    const schema = createValidSchema();
+    schema.components.find(component => component.id === 'name-input')!.unknownProp = true;
+    expect(validateFormSchema(schema).errors).toContain('组件 name-input 使用了 input 未声明的属性: unknownProp');
+  });
+
   it('requires reciprocal constraints for two bound date pickers', () => {
     const schema: PageSchema = {
       components: [

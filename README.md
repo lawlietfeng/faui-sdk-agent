@@ -13,6 +13,7 @@ AI Agent 调度框架，通过 OpenAI Responses API 的工具调用增量生成 
 - **Form Edition 约束**：只生成 `faui-sdk` Form Edition 组件，不生成 `full` 专属组件
 - **自动校验**：每次 Schema 修改后校验根节点、绑定、组件白名单、表单提交和必填标签结构
 - **完全可定制**：system prompt、tools、tool executor、额外 skills 均可外部传入
+- **SDK 契约驱动**：组件白名单、允许属性、动态属性绑定和 children 模式来自本地 `faui-sdk/src/formComponentContracts.ts`
 
 ## 安装
 
@@ -173,6 +174,16 @@ import {
 | `dynamic-form` | 条件与重复表单项；仅在明确需要时加载 |
 
 默认不生成视觉样式、虚构接口或成功提示。用户未提供业务动作时，提交按钮只执行表单校验。
+
+### 同步本地 faui-sdk Form 契约
+
+Agent 当前以相邻目录的本地 `faui-sdk` 为默认来源：`../faui-sdk/src/formComponentContracts.ts`。契约快照位于 `src/form-contracts.generated.ts`，更新 SDK 后执行：
+
+```bash
+npm run sync:form-contracts
+```
+
+也可以通过 `FAUI_SDK_ROOT` 指定本地 SDK 路径。未同步快照时，Agent 继续使用上一次已生成的契约版本。
 
 ## 自定义扩展
 

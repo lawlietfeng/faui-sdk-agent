@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox';
 export const SCHEMA_TOOLS = [
   {
     name: 'set_components',
-    description: 'Initialize a Form Edition schema. Use only for the first creation and always include dataModel. Components may include a style object with React inline CSS; when a UI style directive is present, encode the requested visual result in those style values.',
+    description: 'Initialize a Form Edition schema. Use only for the first creation and always include dataModel. Component names and properties must follow the bundled faui-sdk formComponentContracts; unknown properties are rejected. Components may include a style object with React inline CSS when declared by the contract.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),
@@ -14,7 +14,7 @@ export const SCHEMA_TOOLS = [
   },
   {
     name: 'update_components',
-    description: 'Update existing components by ID or add new Form Edition components. Use this tool to add or update component style objects when applying a UI style directive.',
+    description: 'Update existing components by ID or add new Form Edition components. Component names, properties, dynamic bindings, and children modes must follow the bundled faui-sdk formComponentContracts. Use this tool to add or update declared style objects when applying a UI style directive.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),

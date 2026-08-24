@@ -18,7 +18,8 @@ export const formCoreSkill: SkillDef = {
 ## 数据绑定
 
 - 输入字段使用 \`value: { "path": "/field" }\`。
-- \`checkbox\` 和 \`switch\` 可使用 \`checked: { "path": "/field" }\`，也兼容 \`value.path\`。
+- \`checkbox\` 和 \`switch\` 生成规范绑定 \`checked: { "path": "/field" }\`；\`value.path\` 仅为 SDK 兼容旧 Schema 的弃用写法，Agent 不主动生成。
+- Repeater 等组件的 \`data\` 绑定也必须遵循契约；绑定路径对应的初始值必须存在于 \`dataModel\`。
 - 路径必须以 \`/\` 开头；\`dataModel\` 必须包含每个字段的初始值。
 - 正确配置绑定后，控件会自动回写数据；同一路径不需要额外写 \`on_change\`。
 - 默认不使用 \`./\` 相对路径；只有明确生成动态 Repeater 表单时才查询对应 Skill。

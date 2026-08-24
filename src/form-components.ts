@@ -1,18 +1,9 @@
-/**
- * 当前开发阶段依据 faui-sdk/src/manifest.ts 的 Form Edition 清单维护。
- * 发布前需重新与 faui-sdk 的 formComponentNames 核对。
- */
-export const FORM_COMPONENT_NAMES = [
-  'box', 'flex', 'grid', 'row', 'col', 'space', 'layout', 'header', 'sider', 'content', 'footer', 'divider',
-  'form', 'input', 'textarea', 'select', 'radio', 'checkbox', 'datepicker', 'timepicker', 'upload', 'switch',
-  'inputnumber', 'slider', 'rate', 'cascader', 'treeselect', 'colorpicker', 'transfer', 'autocomplete', 'mentions',
-  'button', 'calendar', 'segmented',
-  'text', 'icon', 'typography', 'tag', 'skeleton', 'progress',
-  'alert', 'spin', 'modal', 'drawer', 'tooltip', 'popover', 'popconfirm',
-  'condition', 'repeater',
-] as const;
+import { FORM_COMPONENT_CONTRACTS } from './form-contracts.generated.js';
 
-export type FormComponentName = typeof FORM_COMPONENT_NAMES[number];
+/** Form Edition component names derived from faui-sdk's machine-readable contract. */
+export const FORM_COMPONENT_NAMES = Object.keys(FORM_COMPONENT_CONTRACTS) as Array<keyof typeof FORM_COMPONENT_CONTRACTS>;
+
+export type FormComponentName = keyof typeof FORM_COMPONENT_CONTRACTS;
 
 const formComponentNameSet = new Set<string>(FORM_COMPONENT_NAMES);
 
