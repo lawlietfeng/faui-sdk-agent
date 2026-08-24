@@ -6,10 +6,12 @@ import {
   type OpenAIResponsesTool,
 } from './openai-responses-provider.js';
 import type { GeneratePageOptions, GeneratePageResult, PageSchema, StreamEvent } from './types.js';
+import { buildFormContractPrompt, FORM_COMPONENT_CATALOG_PROMPT, getFormComponentContract } from './form-contract.js';
 import { validateFormSchema } from './form-schema.js';
 import type { SkillDef } from './skill-store.js';
 import { selectFormSkills } from './skill-selector.js';
 import { builtinSkills } from './skills/index.js';
+import { selectFormContractComponents } from './component-selector.js';
 import { SCHEMA_TOOLS } from './tools.js';
 import { executeToolCall } from './tool-executor.js';
 
@@ -52,10 +54,21 @@ function createRequest(
   };
 }
 
-function buildSystemPrompt(base: string, skillContent: string, options?: GeneratePageOptions): string {
+const STYLE_MODE_PROMPT = `## Style mode
+已启用 style 能力。将注入的样式 Skill 落实到最终 Schema 的 style 中；style 使用标准 React 行内 CSS 驼峰属性，值只能为 string 或 number。只为目标风格添加必要样式，不使用 Tailwind、className、伪类、CSS 变量或未定义主题字段。样式不得破坏组件、绑定、校验、提交和工具规则。`;
+
+function buildSystemPrompt(
+  base: string,
+  contractContent: string,
+  skillContent: string,
+  styleEnabled: boolean,
+  options?: GeneratePageOptions,
+): string {
   let prompt = base;
+  prompt += `\n\n${FORM_COMPONENT_CATALOG_PROMPT}\n\n${contractContent}`;
+  if (styleEnabled) prompt += `\n\n${STYLE_MODE_PROMPT}`;
   if (skillContent) {
-    prompt += '\n' + skillContent;
+    prompt += '\n\n' + skillContent;
   }
   if (options?.pagePrefix) {
     prompt += `\nUse "${options.pagePrefix}" as the prefix for non-root component IDs (e.g. "${options.pagePrefix}-name"). Keep the root ID exactly "root".`;
@@ -105,31 +118,104 @@ function appendHistory(messages: OpenAIResponsesMessage[], options?: GeneratePag
   }
 }
 
-function buildPromptAndSkills(config: FauiAgentConfig, prompt: string, options?: GeneratePageOptions): {
+export function buildPromptAndSkills(config: FauiAgentConfig, prompt: string, options?: GeneratePageOptions): {
   systemPrompt: string;
   skillsUsed: string[];
+  styleEnabled: boolean;
+  contractComponents: string[];
 } {
   const automaticSkills = selectFormSkills(`${prompt}\n${options?.context ?? ''}`, builtinSkills);
   const customSkills = config.skills ?? [];
   const allSkills = new Map<string, SkillDef>();
   for (const skill of automaticSkills) allSkills.set(skill.name, skill);
   for (const skill of customSkills) {
-    if (!allSkills.has(skill.name)) allSkills.set(skill.name, skill);
+    allSkills.delete(skill.name);
+    allSkills.set(skill.name, skill);
   }
   const selectedSkills = [...allSkills.values()];
+  const styleEnabled = selectedSkills.some(skill => skill.capabilities?.includes('style'));
+  const contractComponents = selectFormContractComponents(
+    `${prompt}\n${options?.context ?? ''}`,
+    options?.currentSchema,
+  );
   const skillContent = selectedSkills
     .map((skill) => `<skill name="${skill.name}">\n${skill.content}\n</skill>`)
     .join('\n\n');
   return {
-    systemPrompt: buildSystemPrompt(config.systemPrompt, skillContent, options),
+    systemPrompt: buildSystemPrompt(
+      config.systemPrompt,
+      buildFormContractPrompt({ components: contractComponents, includeStyle: styleEnabled }),
+      skillContent,
+      styleEnabled,
+      options,
+    ),
     skillsUsed: selectedSkills.map((skill) => skill.name),
+    styleEnabled,
+    contractComponents,
   };
+}
+
+function validateGeneratedSchema(schema: unknown, styleEnabled: boolean): ReturnType<typeof validateFormSchema> {
+  const validation = validateFormSchema(schema);
+  if (!validation.valid) return validation;
+
+  try {
+    executeToolCall(
+      'set_components',
+      schema as Record<string, unknown>,
+      { components: [], dataModel: {} },
+      { styleEnabled },
+    );
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [error instanceof Error ? error.message : String(error)],
+    };
+  }
+  return validation;
+}
+
+function getToolContractComponents(
+  args: Record<string, unknown>,
+  currentSchema: PageSchema,
+  error: unknown,
+): string[] {
+  const ids = new Map(currentSchema.components.map(component => [component.id, component.component]));
+  const components = args.components;
+  if (Array.isArray(components)) {
+    for (const value of components) {
+      if (!isRecord(value)) continue;
+      if (typeof value.id === 'string' && typeof value.component === 'string') {
+        ids.set(value.id, value.component);
+      }
+    }
+  }
+
+  const result = new Set<string>();
+  const message = error instanceof Error ? error.message : String(error);
+  for (const match of message.matchAll(/组件\s+([^\s(的]+)(?:\s+\(([^)]+)\))?/g)) {
+    const component = match[2] ?? ids.get(match[1]);
+    if (component) result.add(component);
+  }
+  for (const match of message.matchAll(/使用了\s+([a-z][\w-]+)\s+未声明的属性/g)) {
+    result.add(match[1]);
+  }
+
+  // If the validator cannot identify an ID, only use explicit component names
+  // from this call. This is the narrowest useful fallback for malformed calls.
+  if (result.size === 0 && Array.isArray(components)) {
+    for (const value of components) {
+      if (isRecord(value) && typeof value.component === 'string') result.add(value.component);
+    }
+  }
+
+  return [...result].filter(component => getFormComponentContract(component));
 }
 
 export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePageResult> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
+  const { systemPrompt, skillsUsed, styleEnabled } = buildPromptAndSkills(config, prompt, options);
   const provider = new OpenAIResponsesProvider();
   const messages: OpenAIResponsesMessage[] = [
     { role: 'user', content: prompt, timestamp: Date.now() },
@@ -170,7 +256,7 @@ export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePag
       continue;
     }
 
-    const validation = validateFormSchema(parsed);
+    const validation = validateGeneratedSchema(parsed, styleEnabled);
     if (!validation.valid) {
       messages.push(
         { role: 'response', outputItems: result.outputItems, timestamp: Date.now() },
@@ -192,7 +278,7 @@ export async function runAgentLoop(params: AgentLoopParams): Promise<GeneratePag
 export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerator<StreamEvent> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
+  const { systemPrompt, skillsUsed, styleEnabled } = buildPromptAndSkills(config, prompt, options);
   const provider = new OpenAIResponsesProvider();
   const messages: OpenAIResponsesMessage[] = [];
   appendHistory(messages, options);
@@ -276,7 +362,7 @@ export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerat
       continue;
     }
 
-    const validation = validateFormSchema(parsed);
+    const validation = validateGeneratedSchema(parsed, styleEnabled);
     if (!validation.valid) {
       yield { type: 'status', message: '结构校验未通过，正在重试...' };
       messages.push(
@@ -302,10 +388,14 @@ export async function* runAgentLoopStream(params: AgentLoopParams): AsyncGenerat
 export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGenerator<StreamEvent> {
   const { prompt, config, options } = params;
   const maxTurns = config.maxTurns ?? 10;
-  const { systemPrompt, skillsUsed } = buildPromptAndSkills(config, prompt, options);
+  const promptConfig = buildPromptAndSkills(config, prompt, options);
+  let { systemPrompt } = promptConfig;
+  const { skillsUsed, styleEnabled } = promptConfig;
+  const injectedContractComponents = new Set(promptConfig.contractComponents);
+  const supplementalContractComponents = new Set<string>();
   const provider = new OpenAIResponsesProvider();
   const configuredTools = getConfiguredTools(config);
-  const executeConfiguredTool = config.toolExecutor ?? executeToolCall;
+  const executeConfiguredTool = config.toolExecutor;
 
   const suppliedSchema = options?.currentSchema;
   if (suppliedSchema) {
@@ -338,6 +428,17 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
 
   const maxMessages = config.maxMessages ?? DEFAULT_MAX_MESSAGES;
   let turns = 0;
+
+  const appendSupplementalContracts = (components: string[]): void => {
+    const additions = components.filter((component) => !injectedContractComponents.has(component)
+      && !supplementalContractComponents.has(component));
+    if (additions.length === 0) return;
+    additions.forEach(component => supplementalContractComponents.add(component));
+    systemPrompt += `\n\n## 校验失败后的补充组件契约\n${buildFormContractPrompt({
+      components: additions,
+      includeStyle: styleEnabled,
+    })}`;
+  };
 
   for (let index = 0; index < maxTurns; index++) {
     turns++;
@@ -404,13 +505,16 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
       try {
         if (toolCall.argumentsError) throw new Error(toolCall.argumentsError);
         const schemaBeforeTool = JSON.parse(JSON.stringify(currentSchema)) as PageSchema;
-        const result = executeConfiguredTool(toolCall.name, toolCall.arguments, schemaBeforeTool);
-        if (toolCall.name !== 'validate_schema') {
+        const result = executeConfiguredTool
+          ? executeConfiguredTool(toolCall.name, toolCall.arguments, schemaBeforeTool, { styleEnabled })
+          : executeToolCall(toolCall.name, toolCall.arguments, schemaBeforeTool, { styleEnabled });
+        const readOnlyTool = toolCall.name === 'validate_schema' || toolCall.name === 'get_component_contracts';
+        if (!readOnlyTool) {
           const validation = validateFormSchema(result.schema);
           if (!validation.valid) throw new Error(validation.errors.join('\n'));
         }
 
-        if (toolCall.name !== 'validate_schema') {
+        if (!readOnlyTool) {
           currentSchema = result.schema;
           if (toolCall.name === 'set_components') hasSetComponents = true;
           yield { type: 'schema_updated', schema: { ...currentSchema } };
@@ -424,6 +528,7 @@ export async function* runAgentLoopWithTools(params: AgentLoopParams): AsyncGene
           timestamp: Date.now(),
         });
       } catch (error) {
+        appendSupplementalContracts(getToolContractComponents(toolCall.arguments, currentSchema, error));
         messages.push({
           role: 'tool',
           callId: toolCall.id,

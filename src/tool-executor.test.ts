@@ -24,6 +24,33 @@ function createValidSchema(): PageSchema {
 }
 
 describe('executeToolCall', () => {
+  describe('get_component_contracts', () => {
+    it('returns a batch of contracts without changing the schema', () => {
+      const current = createValidSchema();
+      const result = executeToolCall('get_component_contracts', {
+        components: ['input', 'select'],
+      }, current);
+      expect(result.schema).toBe(current);
+      const payload = JSON.parse(result.message) as { contracts: Record<string, any> };
+      expect(Object.keys(payload.contracts)).toEqual(['input', 'select']);
+      expect(payload.contracts.input.allowedProps).not.toContain('style');
+    });
+
+    it('includes style in contracts when style is enabled', () => {
+      const result = executeToolCall('get_component_contracts', {
+        components: ['input'],
+      }, empty, { styleEnabled: true });
+      const payload = JSON.parse(result.message) as { contracts: Record<string, any> };
+      expect(payload.contracts.input.allowedProps).toContain('style');
+    });
+
+    it('rejects unknown components', () => {
+      expect(() => executeToolCall('get_component_contracts', {
+        components: ['not-a-form-component'],
+      }, empty)).toThrow(/不支持的 Form Edition 组件/);
+    });
+  });
+
   describe('set_components', () => {
     it('sets and validates a complete Form Edition schema', () => {
       const schema = createValidSchema();
@@ -48,6 +75,24 @@ describe('executeToolCall', () => {
       expect(() => executeToolCall('set_components', { ...createValidSchema() }, createValidSchema()))
         .toThrow('schema 已存在组件');
     });
+
+    it('rejects style when no style Skill is active', () => {
+      expect(() => executeToolCall('set_components', {
+        components: [{ id: 'root', component: 'form', style: { color: 'red' } }],
+        dataModel: {},
+      }, empty)).toThrow(/不能新增 style/);
+    });
+
+    it('allows style when a style Skill is active', () => {
+      const result = executeToolCall('set_components', {
+        components: [
+          { id: 'root', component: 'form', style: { color: 'red', gap: 4 }, children: ['submit'] },
+          { id: 'submit', component: 'button', label: '提交' },
+        ],
+        dataModel: {},
+      }, empty, { styleEnabled: true });
+      expect(result.schema.components[0].style).toEqual({ color: 'red', gap: 4 });
+    });
   });
 
   describe('update_components', () => {
@@ -69,6 +114,22 @@ describe('executeToolCall', () => {
       expect(() => executeToolCall('update_components', {
         components: [{ id: 'name-input', component: 'table' }],
       }, createValidSchema())).toThrow(/不支持的组件: table/);
+    });
+
+    it('rejects adding style when no style Skill is active', () => {
+      expect(() => executeToolCall('update_components', {
+        components: [{ id: 'name-input', style: { color: 'red' } }],
+      }, createValidSchema())).toThrow(/不能新增 style.*name-input/);
+    });
+
+    it('preserves existing style when an update does not touch it', () => {
+      const current = createValidSchema();
+      current.components.find(component => component.id === 'name-input')!.style = { color: 'red' };
+      const result = executeToolCall('update_components', {
+        components: [{ id: 'name-input', placeholder: '新的提示' }],
+      }, current);
+      expect(result.schema.components.find(component => component.id === 'name-input')?.style)
+        .toEqual({ color: 'red' });
     });
   });
 
@@ -214,6 +275,18 @@ describe('validateFormSchema', () => {
     const schema = createValidSchema();
     schema.components.find(component => component.id === 'name-input')!.unknownProp = true;
     expect(validateFormSchema(schema).errors).toContain('组件 name-input 使用了 input 未声明的属性: unknownProp');
+  });
+
+  it('validates style values as flat string/number values', () => {
+    const schema = createValidSchema();
+    schema.components.find(component => component.id === 'name-input')!.style = {
+      color: 'red',
+      marginTop: 8,
+      nested: { color: 'blue' },
+    };
+    expect(validateFormSchema(schema).errors).toContain(
+      '组件 name-input 的 style.nested 值必须是 string 或 number',
+    );
   });
 
   it('requires reciprocal constraints for two bound date pickers', () => {

@@ -47,7 +47,6 @@ function normalise(value: string): string {
 export function selectFormSkills(prompt: string, availableSkills: SkillDef[]): SkillDef[] {
   const byName = new Map(availableSkills.map(skill => [skill.name, skill]));
   const selected = new Set<string>();
-  if (byName.has('form-core')) selected.add('form-core');
 
   const text = normalise(prompt);
   for (const rule of SKILL_RULES) {

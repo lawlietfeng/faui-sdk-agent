@@ -6,7 +6,7 @@ export const formLayoutSkill: SkillDef = {
   content: `
 # 表单布局
 
-默认不添加主题色、阴影、Tailwind 类或大量内联样式。只在需求明确时添加样式。
+默认不添加主题色、阴影、Tailwind 类或内联样式；只有显式注入 style 能力的 Skill 时才可新增或修改样式。
 
 - 单列字段：\`form → box → [text 标签, 字段]\`。
 - 表单分组：使用 \`divider\` 分隔；每组使用 \`box\` 容纳表单项。

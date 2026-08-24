@@ -4,6 +4,22 @@ export { FORM_COMPONENT_CONTRACTS, FORM_COMPONENT_CONTRACT_VERSION, FORM_SCHEMA_
 
 type ContractRecord = Record<string, any>;
 
+/** Options controlling the model-facing projection of the Form contract. */
+export interface FormContractPromptOptions {
+  /** Components to include. Omit to preserve the legacy full-contract output. */
+  components?: readonly string[];
+  /** Whether the style property should be exposed to the model. */
+  includeStyle?: boolean;
+}
+
+/** A compact directory that lets the model discover Form components by name. */
+export const FORM_COMPONENT_CATALOG_PROMPT = `## Form Edition component directory
+- 结构：box、flex、grid、row、col、space、layout、header、sider、content、footer、divider、form
+- 字段：input、textarea、inputnumber、select、radio、checkbox、switch、datepicker、timepicker、upload、slider、rate、cascader、treeselect、colorpicker、transfer、autocomplete、mentions、calendar、segmented
+- 展示：text、icon、typography、alert、tag、spin、skeleton、progress
+- 交互与动态：modal、drawer、tooltip、popover、popconfirm、condition、repeater
+未注入某组件的完整契约时，先使用 get_component_contracts 查询；不得猜测组件名或属性。`;
+
 const contracts = FORM_COMPONENT_CONTRACTS as ContractRecord;
 const schemaContract = FORM_SCHEMA_CONTRACT as ContractRecord;
 
@@ -22,13 +38,20 @@ function formatBinding(binding: ContractRecord): string {
  * Compact model-facing projection of the SDK contract. The generated contract
  * remains the source of truth; this is only a prompt serialization of it.
  */
-export function buildFormContractPrompt(): string {
+export function buildFormContractPrompt(options: FormContractPromptOptions = {}): string {
+  const includeStyle = options.includeStyle ?? true;
+  const requested = options.components ? new Set(options.components) : undefined;
+  const selectedNames = Object.keys(contracts).filter((name) => !requested || requested.has(name));
   const lines = [
     `## Form Edition component contract (faui-sdk contract v${FORM_COMPONENT_CONTRACT_VERSION})`,
     '组件名、允许属性、children 模式、动态属性和绑定属性必须以以下契约为准；未列出的属性不要生成。',
   ];
 
-  for (const name of Object.keys(contracts)) {
+  if (includeStyle) {
+    lines.push('style 可用于当前列出的组件：必须是 React 行内样式对象，属性值只能为 string 或 number。');
+  }
+
+  for (const name of selectedNames) {
     const contract = contracts[name];
     const properties = (contract.properties ?? {}) as Record<string, ContractRecord>;
     const dynamic = Object.entries(properties)
@@ -40,7 +63,8 @@ export function buildFormContractPrompt(): string {
     const dependencies = (contract.dependencies ?? [])
       .map((dependency: ContractRecord) => dependency.message ?? `${dependency.when ?? ''} requires ${dependency.requires ?? ''}`)
       .filter(Boolean);
-    lines.push(`- ${name}: children=${contract.childrenMode}; props=${contract.allowedProps.join(', ')}`);
+    const allowedProps = (contract.allowedProps as string[]).filter((property) => includeStyle || property !== 'style');
+    lines.push(`- ${name}: children=${contract.childrenMode}; props=${allowedProps.join(', ')}`);
     if (dynamic.length > 0) lines.push(`  dynamic: ${dynamic.join('; ')}`);
     if (binding) lines.push(`  ${binding}`);
     if (dependencies.length > 0) lines.push(`  dependencies: ${dependencies.join(' | ')}`);
@@ -55,4 +79,9 @@ export function buildFormContractPrompt(): string {
   return lines.join('\n');
 }
 
+/**
+ * Legacy full-contract prompt kept for callers that imported it directly.
+ * New integrations should use buildFormContractPrompt({ components, includeStyle }).
+ */
+/** @deprecated Use buildFormContractPrompt({ components }) for new integrations. */
 export const FORM_CONTRACT_PROMPT = buildFormContractPrompt();

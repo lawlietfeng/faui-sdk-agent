@@ -2,8 +2,15 @@ import { Type } from '@sinclair/typebox';
 
 export const SCHEMA_TOOLS = [
   {
+    name: 'get_component_contracts',
+    description: '查询一个或多个 Form Edition 组件的完整契约。该工具只读，不修改 Schema；组件属性、children 模式、绑定和依赖关系均以返回契约为准。',
+    parameters: Type.Object({
+      components: Type.Array(Type.String(), { minItems: 1 }),
+    }),
+  },
+  {
     name: 'set_components',
-    description: 'Initialize a Form Edition schema. Use only for the first creation and always include dataModel. Component names and properties must follow the bundled faui-sdk formComponentContracts; unknown properties are rejected. Components may include a style object with React inline CSS when declared by the contract.',
+    description: 'Initialize a Form Edition schema. Use only for the first creation and always include dataModel. Component names and properties must follow the bundled faui-sdk formComponentContracts; unknown properties are rejected. New or changed style requires an active style Skill.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),
@@ -14,7 +21,7 @@ export const SCHEMA_TOOLS = [
   },
   {
     name: 'update_components',
-    description: 'Update existing components by ID or add new Form Edition components. Component names, properties, dynamic bindings, and children modes must follow the bundled faui-sdk formComponentContracts. Use this tool to add or update declared style objects when applying a UI style directive.',
+    description: 'Update existing components by ID or add new Form Edition components. Component names, properties, dynamic bindings, and children modes must follow the bundled faui-sdk formComponentContracts. New or changed style requires an active style Skill.',
     parameters: Type.Object({
       components: Type.Array(Type.Object({
         id: Type.String(),

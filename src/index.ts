@@ -4,8 +4,6 @@
  * 公开 API 入口。agent-loop 内部实现不在此导出。
  */
 
-import { FORM_CONTRACT_PROMPT } from './form-contract.js';
-
 export { FauiAgent, type FauiAgentConfig, type ToolResult } from './agent.js';
 export type {
   PageSchema,
@@ -15,14 +13,18 @@ export type {
   StreamEvent,
 } from './types.js';
 export { SCHEMA_TOOLS } from './tools.js';
-export { executeToolCall } from './tool-executor.js';
+export { executeToolCall, type ToolExecutionOptions } from './tool-executor.js';
 export { TOOL_SYSTEM_PROMPT } from './tool-system-prompt.js';
 export {
   FORM_CONTRACT_PROMPT,
+  FORM_COMPONENT_CATALOG_PROMPT,
   FORM_COMPONENT_CONTRACT_VERSION,
   FORM_COMPONENT_CONTRACTS,
   FORM_SCHEMA_CONTRACT,
+  buildFormContractPrompt,
+  getFormComponentContract,
 } from './form-contract.js';
+export type { FormContractPromptOptions } from './form-contract.js';
 export { builtinSkills } from './skills/index.js';
 export { SkillStore, type SkillDef } from './skill-store.js';
 export {
@@ -58,5 +60,6 @@ Rules:
 - Use pure expressions or contract-allowed { "path": "/field" } bindings for dynamic properties. Referenced fields must have initial dataModel values.
 - Include a dataModel object, even when it is empty
 - Output ONLY the JSON, no markdown fences, no explanation
-\n${FORM_CONTRACT_PROMPT}
+- Component properties and bindings must come from the injected Form Component Contract.
+- By default do not add or modify \`style\`; preserve existing valid styles. A Skill with the explicit \`style\` capability is required for new or changed styles.
 `;

@@ -43,6 +43,18 @@ function matchesContractSchema(value: unknown, schema: Record<string, unknown> |
   return true;
 }
 
+function validateStyle(value: unknown, componentId: string, errors: string[]): void {
+  if (!isRecord(value)) {
+    errors.push(`组件 ${componentId} 的 style 必须是对象`);
+    return;
+  }
+  for (const [property, styleValue] of Object.entries(value)) {
+    if (typeof styleValue !== 'string' && typeof styleValue !== 'number') {
+      errors.push(`组件 ${componentId} 的 style.${property} 值必须是 string 或 number`);
+    }
+  }
+}
+
 function getDataPath(dataModel: Record<string, unknown>, path: string): unknown {
   const parts = path.slice(1).split('/').map(part => part.replace(/~1/g, '/').replace(/~0/g, '~'));
   let current: unknown = dataModel;
@@ -232,6 +244,10 @@ function validateContractProperties(
   const allowRelativePath = isInsideRepeater(component.id, parentIds, byId);
   for (const [property, value] of Object.entries(component)) {
     if (value === undefined) continue;
+    if (property === 'style') {
+      validateStyle(value, component.id, errors);
+      continue;
+    }
     const propertyContract = contract.properties?.[property];
     const bindings = propertyContract?.bindings;
     if (!bindings) continue;

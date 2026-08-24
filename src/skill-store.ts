@@ -18,6 +18,8 @@ export interface SkillDef {
   name: string;
   description: string;
   content: string;
+  /** Explicit capabilities enabled by this Skill (for example, `style`). */
+  capabilities?: string[];
 }
 
 /** Skill Store 配置 */
@@ -39,6 +41,7 @@ export interface SkillStoreConfig {
  * ---
  * name: my-skill
  * description: 做某件事
+ * capabilities: style
  * ---
  * 正文内容...
  * ```
@@ -61,10 +64,15 @@ function parseSkillFile(filePath: string, raw: string): SkillDef {
     if (kv) meta[kv[1]] = kv[2].replace(/^["']|["']$/g, '');
   }
 
+  const capabilities = meta.capabilities
+    ? meta.capabilities.split(',').map((value) => value.trim()).filter(Boolean)
+    : undefined;
+
   return {
     name: meta['name'] || path.basename(filePath, '.md'),
     description: meta['description'] || '',
     content: fmMatch[2].trim(),
+    ...(capabilities?.length ? { capabilities } : {}),
   };
 }
 
@@ -145,6 +153,9 @@ export class SkillStore {
       lines.push(`    <name>${escapeXml(s.name)}</name>`);
       if (s.description) {
         lines.push(`    <description>${escapeXml(s.description)}</description>`);
+      }
+      if (s.capabilities?.length) {
+        lines.push(`    <capabilities>${escapeXml(s.capabilities.join(', '))}</capabilities>`);
       }
       lines.push('  </skill>');
     }

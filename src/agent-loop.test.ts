@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractJson, runAgentLoopWithTools, validateSchema, trimMessages } from './agent-loop.js';
+import { buildPromptAndSkills, extractJson, runAgentLoopWithTools, validateSchema, trimMessages } from './agent-loop.js';
 import type { OpenAIResponsesMessage } from './openai-responses-provider.js';
 
 describe('extractJson', () => {
@@ -61,6 +61,25 @@ describe('trimMessages', () => {
   });
 });
 
+describe('buildPromptAndSkills', () => {
+  it('lets explicit user Skills override built-ins and enables style explicitly', () => {
+    const result = buildPromptAndSkills({
+      apiKey: 'test-key',
+      systemPrompt: 'system',
+      skills: [
+        { name: 'field-text', description: 'custom', content: 'CUSTOM FIELD RULE' },
+        { name: 'brand-style', description: 'brand', capabilities: ['style'], content: 'CUSTOM STYLE RULE' },
+      ],
+    }, '填写姓名');
+
+    expect(result.skillsUsed).toEqual(['field-text', 'brand-style']);
+    expect(result.systemPrompt).toContain('CUSTOM FIELD RULE');
+    expect(result.systemPrompt).not.toContain('# 文本字段');
+    expect(result.systemPrompt).toContain('CUSTOM STYLE RULE');
+    expect(result.systemPrompt).toMatch(/- input:.*\bstyle\b/);
+  });
+});
+
 describe('runAgentLoopWithTools', () => {
   it('replays a function call and returns its result using the same call_id', async () => {
     const originalFetch = globalThis.fetch;
@@ -119,6 +138,10 @@ describe('runAgentLoopWithTools', () => {
         call_id: 'call_1',
         output: 'Set 1 components and validated schema',
       });
+      const initialInstructions = String(requestBodies[0].instructions);
+      expect(initialInstructions).toContain('- input:');
+      expect(initialInstructions).not.toContain('- upload:');
+      expect(initialInstructions).not.toMatch(/- form:.*\bstyle\b/);
     } finally {
       globalThis.fetch = originalFetch;
     }

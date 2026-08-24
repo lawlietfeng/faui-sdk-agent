@@ -10,6 +10,7 @@
 import type { GeneratePageOptions, GeneratePageResult, PageSchema, StreamEvent } from './types.js';
 import { SkillStore, type SkillDef } from './skill-store.js';
 import { runAgentLoop, runAgentLoopStream, runAgentLoopWithTools } from './agent-loop.js';
+import type { ToolExecutionOptions } from './tool-executor.js';
 
 export interface ToolResult {
   schema: PageSchema;
@@ -41,7 +42,12 @@ export interface FauiAgentConfig {
   /** 自定义工具定义（不传则使用内置 SCHEMA_TOOLS） */
   tools?: unknown[];
   /** 自定义工具执行器（不传则使用内置 executeToolCall） */
-  toolExecutor?: (name: string, args: Record<string, unknown>, schema: PageSchema) => ToolResult;
+  toolExecutor?: (
+    name: string,
+    args: Record<string, unknown>,
+    schema: PageSchema,
+    options?: ToolExecutionOptions,
+  ) => ToolResult;
 
   /** 额外 Skills；显式传入的 Skills 会与自动选择的 Form Skills 一同加载 */
   skills?: SkillDef[];

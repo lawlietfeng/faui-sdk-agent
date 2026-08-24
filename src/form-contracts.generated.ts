@@ -1,5 +1,5 @@
 // Generated from faui-sdk/src/formComponentContracts.ts. Do not edit manually.
-export const FORM_COMPONENT_CONTRACT_VERSION = 1 as const;
+export const FORM_COMPONENT_CONTRACT_VERSION = 2 as const;
 export const FORM_COMPONENT_CONTRACTS = {
   "box": {
     "component": "box",
@@ -10,6 +10,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "padding",
       "layout",
       "spacing",
@@ -44,7 +45,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -162,6 +168,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "vertical",
       "wrap",
       "gap",
@@ -197,7 +204,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -327,6 +339,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "wrap",
       "gutter",
       "align",
@@ -360,7 +373,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -466,6 +484,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "wrap",
       "gutter",
       "align",
@@ -499,7 +518,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -605,6 +629,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "flex",
       "span",
       "offset",
@@ -646,7 +671,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -848,6 +878,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "direction",
       "size",
       "align",
@@ -882,7 +913,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1000,6 +1036,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "hasSider",
       "children"
     ],
@@ -1030,7 +1067,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1100,6 +1142,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "children"
     ],
     "childrenMode": "component-ids",
@@ -1129,7 +1172,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1187,6 +1235,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "width",
       "collapsible",
       "collapsedWidth",
@@ -1221,7 +1270,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1339,6 +1393,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "children"
     ],
     "childrenMode": "component-ids",
@@ -1368,7 +1423,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1426,6 +1486,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "children"
     ],
     "childrenMode": "component-ids",
@@ -1455,7 +1516,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1513,6 +1579,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "direction",
       "align",
       "content"
@@ -1544,7 +1611,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1630,6 +1702,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "rules",
       "submitButtonId",
       "validateTrigger",
@@ -1663,7 +1736,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1761,6 +1839,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "placeholder",
       "disabled",
       "value",
@@ -1796,7 +1875,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -1940,6 +2024,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "placeholder",
       "disabled",
       "rows",
@@ -1977,7 +2062,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -2145,6 +2235,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "placeholder",
       "options",
       "mode",
@@ -2185,7 +2276,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -2398,6 +2494,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "disabled",
       "value",
@@ -2433,7 +2530,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -2582,6 +2684,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "label",
       "disabled",
@@ -2619,7 +2722,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -2827,6 +2935,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "placeholder",
       "picker",
       "format",
@@ -2866,7 +2975,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -3060,6 +3174,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "format",
       "placeholder",
       "disabled",
@@ -3099,7 +3214,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -3291,6 +3411,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "disabled",
       "accept",
       "multiple",
@@ -3331,7 +3452,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -3535,6 +3661,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "checkedChildren",
       "unCheckedChildren",
       "checked",
@@ -3573,7 +3700,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -3771,6 +3903,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "min",
       "max",
       "step",
@@ -3809,7 +3942,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -3990,6 +4128,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "min",
       "max",
       "step",
@@ -4028,7 +4167,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -4210,6 +4354,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "disabled",
       "allowHalf",
       "count",
@@ -4246,7 +4391,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -4403,6 +4553,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "disabled",
       "value",
@@ -4438,7 +4589,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -4587,6 +4743,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "multiple",
       "placeholder",
@@ -4624,7 +4781,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -4796,6 +4958,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "disabled",
       "value",
       "field",
@@ -4830,7 +4993,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -4963,6 +5131,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "disabled",
       "data",
       "value",
@@ -4998,7 +5167,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -5151,6 +5325,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "placeholder",
       "options",
       "disabled",
@@ -5187,7 +5362,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -5345,6 +5525,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "prefix",
       "disabled",
@@ -5381,7 +5562,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -5540,6 +5726,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "label",
       "title",
       "color",
@@ -5581,7 +5768,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -5786,6 +5978,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "fullscreen",
       "mode",
       "disabled",
@@ -5823,7 +6016,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -5998,6 +6196,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "options",
       "block",
       "disabled",
@@ -6035,7 +6234,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -6210,6 +6414,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "content",
       "color",
       "title"
@@ -6241,7 +6446,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -6326,6 +6536,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "icon",
       "spin",
       "rotate"
@@ -6357,7 +6568,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -6444,6 +6660,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "variant",
       "textType",
       "type",
@@ -6490,7 +6707,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -6752,6 +6974,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "title",
       "content",
       "message",
@@ -6789,7 +7012,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -6942,6 +7170,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "content",
       "color",
       "bordered"
@@ -6973,7 +7202,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -7061,6 +7295,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "spinning",
       "tip",
       "size",
@@ -7093,7 +7328,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -7189,6 +7429,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "loading",
       "visible",
       "active",
@@ -7229,7 +7470,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -7430,6 +7676,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "percent",
       "status",
       "size"
@@ -7461,7 +7708,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -7547,6 +7799,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "open",
       "title",
       "cancelText",
@@ -7592,7 +7845,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -7844,6 +8102,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "open",
       "title",
       "placement",
@@ -7887,7 +8146,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -8115,6 +8379,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "title",
       "placement",
       "trigger",
@@ -8151,7 +8416,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -8297,6 +8567,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "title",
       "content",
       "placement",
@@ -8333,7 +8604,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -8477,6 +8753,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "title",
       "description",
       "okText",
@@ -8515,7 +8792,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -8685,6 +8967,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "when",
       "then",
       "else",
@@ -8719,7 +9002,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
@@ -8873,6 +9161,7 @@ export const FORM_COMPONENT_CONTRACTS = {
     "allowedProps": [
       "id",
       "component",
+      "style",
       "data",
       "direction",
       "gap",
@@ -8907,7 +9196,12 @@ export const FORM_COMPONENT_CONTRACTS = {
       "style": {
         "schema": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
         }
       },
       "className": {
