@@ -20,6 +20,12 @@ describe('selectFormSkills', () => {
       .toEqual(['field-advanced', 'validation-submit', 'actions']);
   });
 
+  it('loads action Skill for iframe parent communication', () => {
+    expect(selectFormSkills('嵌入 iframe 后点击按钮通知父页面', builtinSkills)
+      .map(skill => skill.name))
+      .toEqual(['actions']);
+  });
+
   it('loads dynamic-form for natural-language conditional display requirements', () => {
     expect(selectFormSkills('勾选全天后显示日期，否则显示日期和时间', builtinSkills)
       .map(skill => skill.name))

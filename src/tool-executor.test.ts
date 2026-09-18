@@ -250,6 +250,29 @@ describe('validateFormSchema', () => {
     expect(errors).toContain('组件 dialog.on_ok 使用了未支持的 action: not_supported');
   });
 
+  it('validates post_message actions and their target origin', () => {
+    const schema = createValidSchema();
+    schema.components.find(component => component.id === 'submit')!.on_tap = {
+      action: 'post_message',
+      payload: {
+        type: 'faui:submitted',
+        data: { name: '${$root.name}' },
+        targetOrigin: 'https://parent.example.com',
+      },
+    };
+    expect(validateFormSchema(schema).valid).toBe(true);
+
+    const invalid = {
+      ...schema,
+      components: schema.components.map(component => component.id === 'submit'
+        ? { ...component, on_tap: { action: 'post_message', payload: { type: 'faui:submitted', targetOrigin: '*' } } }
+        : component),
+    };
+    expect(validateFormSchema(invalid).errors).toContain(
+      '组件 submit.on_tap.payload.targetOrigin 必须是明确的 HTTP(S) origin，不能使用 * 或包含路径',
+    );
+  });
+
   it('uses the SDK contract for Condition paths and dynamic property capabilities', () => {
     const schema: PageSchema = {
       components: [

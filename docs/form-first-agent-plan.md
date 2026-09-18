@@ -132,7 +132,7 @@ Full 模式应独立使用：
 | `field-date` | `datepicker`、`timepicker`、`calendar` |
 | `field-advanced` | `upload`、`cascader`、`treeselect`、`transfer`、`slider`、`rate`、`colorpicker` |
 | `validation-submit` | 校验、提交、重置、外部提交 |
-| `actions` | HTTP、消息、通知、字段联动 |
+| `actions` | HTTP、消息、通知、嵌入通信、字段联动 |
 | `dynamic-form` | `condition`、`repeater`；第一阶段默认不加载 |
 
 每个 Skill 只描述实际使用的组件、属性、示例和常见错误，避免重复描述全局规则。

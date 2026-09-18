@@ -7,7 +7,7 @@ export interface SchemaValidationResult {
   errors: string[];
 }
 
-const BUILTIN_ACTIONS = new Set(['update_data', 'http_proxy', 'message', 'notification']);
+const BUILTIN_ACTIONS = new Set(['update_data', 'http_proxy', 'message', 'notification', 'post_message']);
 type ContractRecord = Record<string, any>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -189,8 +189,36 @@ function validateAction(action: unknown, location: string, errors: string[], all
     errors.push(`${location}.payload.message 或 payload.description 必填`);
   }
 
+  if (action.action === 'post_message') {
+    if (!isRecord(action.payload) || typeof action.payload.type !== 'string' || !action.payload.type.trim()) {
+      errors.push(`${location}.payload.type 必填且必须是非空字符串`);
+    }
+    if (!isRecord(action.payload) || typeof action.payload.targetOrigin !== 'string' || !action.payload.targetOrigin.trim()) {
+      errors.push(`${location}.payload.targetOrigin 必填且必须是非空字符串`);
+    } else if (!isExpressionString(action.payload.targetOrigin) && !isValidPostMessageOrigin(action.payload.targetOrigin)) {
+      errors.push(`${location}.payload.targetOrigin 必须是明确的 HTTP(S) origin，不能使用 * 或包含路径`);
+    }
+  }
+
   if (action.on_success !== undefined) validateAction(action.on_success, `${location}.on_success`, errors, allowRelativePath);
   if (action.on_error !== undefined) validateAction(action.on_error, `${location}.on_error`, errors, allowRelativePath);
+}
+
+function isExpressionString(value: string): boolean {
+  return value.includes('${');
+}
+
+function isValidPostMessageOrigin(value: string): boolean {
+  if (value === '*') return false;
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol)
+      && url.pathname === '/'
+      && !url.search
+      && !url.hash;
+  } catch {
+    return false;
+  }
 }
 
 function isInsideRepeater(id: string, parentIds: Map<string, string[]>, byId: Map<string, PageComponent>): boolean {

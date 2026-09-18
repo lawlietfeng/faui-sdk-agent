@@ -32,7 +32,7 @@ const SKILL_RULES: SkillRule[] = [
   },
   {
     name: 'actions',
-    terms: ['接口', '请求', 'http', 'api', '消息', '通知', '联动', '成功提示', '失败提示', 'on_change', 'on_tap'],
+    terms: ['接口', '请求', 'http', 'api', '消息', '通知', '联动', '嵌入', 'iframe', 'postmessage', 'post_message', '父页面', '成功提示', '失败提示', 'on_change', 'on_tap'],
   },
   {
     name: 'dynamic-form',
